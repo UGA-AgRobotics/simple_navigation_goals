@@ -13,7 +13,7 @@ from simple_navigation_goals.srv import *
 
 TestFlagLat = 31.4753776881
 TestFlagLon = -83.5289577629
-
+TestFlagUTM = utm.from_latlon(TestFlagLat, TestFlagLon)
 
 
 def convert_to_utm(lat, lon):
@@ -49,9 +49,14 @@ def simple_move():
 
     print("Creating goal...")
 
-    # #use self?
+    x_diff = abs(TestFlagUTM[0] - current_jackal_position_utm[0])  # magnitude in X direction
+    y_diff = abs(TestFlagUTM[1] - current_jackal_position_utm[1])  # magnitude in Y direction
+
+    print("Setting goal with the following x,y scalars: {}m, {}m".format(x_diff, y_diff))
+
     # #set goal
-    # goal.target_pose.pose.position.x = 0.5
+    # goal.target_pose.pose.position.x = x_diff
+    # goal.target_pose.pose.position.y = y_diff
     # goal.target_pose.pose.orientation.w = 0.5
     # goal.target_pose.header.frame_id = 'base_link'
     # goal.target_pose.header.stamp = rospy.Time.now()
@@ -73,9 +78,9 @@ def simple_move():
     # sac.wait_for_result()
 
     # #print result
-    # print sac.get_result()
+    # print("Result: {}".format(sac.get_result()))
 
-    # rospy.spin()
+    # # rospy.spin()
    
 
 

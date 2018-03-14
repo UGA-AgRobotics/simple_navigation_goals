@@ -1,0 +1,9 @@
+<launch>
+	
+	<!-- Launch file for Jackal navigation demo -->
+	<include file=$(find jackal_navigation)/launch/odom_navigation_demo.launch) />
+
+	<!-- Launch file for rosbridge server -->
+	<include file=$(find rosbridge_server)/launch/rosbridge_websocket.launch) />
+
+</launch>

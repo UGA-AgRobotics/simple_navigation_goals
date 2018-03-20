@@ -6,4 +6,7 @@
 	<!-- Launch file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
+	<!-- Run the jackal_pos_server -->
+	
+
 </launch>

@@ -27,7 +27,7 @@ import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
 import tf
 # from transform_utils import quat_to_angle, normalize_angle
-from math import radians, copysign, sqrt, pow, pi
+from math import radians, copysign, sqrt, pow, pi, degrees
 import utm
 import PyKDL
 
@@ -37,6 +37,8 @@ import PyKDL
 TestFlagLat = 31.4753776881
 TestFlagLon = -83.5289577629
 TestFlagUTM = utm.from_latlon(TestFlagLat, TestFlagLon)
+
+global_current_orientation = None
 
 
 
@@ -117,18 +119,24 @@ class SingleGoalNav():
             5. Drive Jackal to flag using distance calculated in 4.
         """
 
-        while not rospy.is_shutdown():
+        # while not rospy.is_shutdown():
             # _jackal_pos = self.call_jackal_pos_service()  # get jackal's current position and orientation
             # _angle = self.quat_to_angle()
 
-            (position, rotation) = self.get_odom()
+        (position, rotation) = self.get_odom()
 
-            print("Jackal's current position: {}".format(position))  # get_odom() seems to already do the above 2 commented out steps
-            print("Jackal's current orientation: {}".format(rotation))
+        print("Jackal's current position: {}".format(position))  # get_odom() seems to already do the above 2 commented out steps
+        print("Jackal's current orientation: {}".format(rotation))
 
-            rospy.sleep(1)
+        rospy.sleep(1)
 
-        rospy.spin()  # temp loop for determining jackal's position/orientation base on reference frame, etc.
+
+
+
+
+
+
+        # rospy.spin()  # temp loop for determining jackal's position/orientation base on reference frame, etc.
             
         # Stop the robot before rotating
         # move_cmd = Twist()
@@ -148,6 +156,19 @@ class SingleGoalNav():
             
         # Stop the robot when we are done
         # self.cmd_vel.publish(Twist())
+
+
+    def turn_jackal(goal_angle=0):
+        # Get current IMU data from get_jackal_rot service
+        rospy.wait_for_service('get_jackal_rot')
+        get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+        current_jackal_rotation = get_jackal_rot()
+
+        quat = current_jackal_rotation.jackal_rot.orientation  # get quaternion from jackal imu
+        curr_angle = degrees(quat_to_angle(quat))  # convert quaternion to angle
+        delta_angle = curr_angle - goal_angle  # determine angle to turn
+
+        print "Current angle: {}, Goal angle: {}, Delta angle: {}".format(curr_angle, goal_angle, delta_angle)
 
 
     def execute_movement(self, position, rotation, goal_distance):
@@ -278,9 +299,10 @@ class SingleGoalNav():
 
 
 
-
 if __name__ == '__main__':
     try:
-        SingleGoalNav()
+        SingleGoalNav().call_jackal_pos_service()
+        # SingleGoalNav()
+        # turn_jackal()
     except rospy.ROSInterruptException:
         rospy.loginfo("Navigation terminated.")

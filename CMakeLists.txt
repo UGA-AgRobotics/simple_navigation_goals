@@ -65,6 +65,7 @@ add_service_files(
 	FILES
 	AddTwoInts.srv
 	JackalPos.srv
+	JackalRot.srv
 )
 
 ## Generate actions in the 'action' folder

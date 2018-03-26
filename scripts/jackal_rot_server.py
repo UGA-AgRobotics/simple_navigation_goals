@@ -31,6 +31,8 @@ def rot_callback_imu(data):
 	"""
 	global global_current_orientation
 	global_current_orientation = data
+	angle = quat_to_angle(global_current_orientation.orientation)
+	print "Jackal's angle: {}".format(degrees(angle))
 
 
 def handle_rot_request(req):

@@ -25,6 +25,7 @@
 import roslib
 import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
+from simple_navigation_goals.srv import *
 import tf
 # from transform_utils import quat_to_angle, normalize_angle
 from math import radians, copysign, sqrt, pow, pi, degrees
@@ -98,7 +99,6 @@ class SingleGoalNav():
                 
 
         position = Point()  # initialize the position variable as a Point type
-
         move_cmd = Twist()  # initialize movement comment
 
         move_cmd.linear.x = linear_speed  # set movement command to forward motion
@@ -119,6 +119,8 @@ class SingleGoalNav():
             5. Drive Jackal to flag using distance calculated in 4.
         """
 
+        track1 = [[1, 0], [1, 1]]  # creating coords for 1m forward, 1m left track
+
         # while not rospy.is_shutdown():
             # _jackal_pos = self.call_jackal_pos_service()  # get jackal's current position and orientation
             # _angle = self.quat_to_angle()
@@ -131,8 +133,12 @@ class SingleGoalNav():
         rospy.sleep(1)
 
 
+        # 1. Recreate turn command from yesterday's jackal_rot_server.py testing: manually telling
+        # the jackal rotation server to turn the jackal 45 degrees..
+        self.call_jackal_rot_service(45)  # tell jackal to turn 45 degrees
 
 
+        return
 
 
 
@@ -283,26 +289,27 @@ class SingleGoalNav():
         """
         Get current GPS fix from Jackal's position
         """
-        # print("Requestion Jackal's current position via get_jackal_pos service..")
         rospy.wait_for_service('get_jackal_pos')
         get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-        current_jackal_position = get_jackal_pos()
-        # print("Jackal's current position: {}".format(current_jackal_position))
+        return get_jackal_pos()
 
-        return current_jackal_position
 
-        # current_jackal_position_utm = convert_to_utm(current_jackal_position.jackal_fix.latitude, current_jackal_position.jackal_fix.longitude)
-
-        # print("Jackal's current position in UTM: {}".format(current_jackal_position_utm))
-
-        # return current_jackal_position_utm
+    def call_jackal_rot_service(self, angle):
+        """
+        Get current IMU position and orientation from Jackal.
+        Inputs:
+            angle - angle to turn in radians
+        """
+        rospy.wait_for_service('get_jackal_rot')
+        get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+        return get_jackal_rot(angle)
 
 
 
 if __name__ == '__main__':
     try:
-        SingleGoalNav().call_jackal_pos_service()
-        # SingleGoalNav()
+        # SingleGoalNav().call_jackal_pos_service()
+        SingleGoalNav()
         # turn_jackal()
     except rospy.ROSInterruptException:
         rospy.loginfo("Navigation terminated.")

@@ -1,2 +1,3 @@
+float64 goal_distance
 ---
 sensor_msgs/NavSatFix jackal_fix

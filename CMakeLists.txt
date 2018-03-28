@@ -63,7 +63,6 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 add_service_files(
 	FILES
-	AddTwoInts.srv
 	JackalPos.srv
 	JackalRot.srv
 )

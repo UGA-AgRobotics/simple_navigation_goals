@@ -16,7 +16,8 @@ odom_frame = '/odom'
 base_frame = '/base_link'
 
 cmd_vel = rospy.Publisher('/cmd_vel', Twist)
-angular_speed = rospy.get_param("~angular_speed", 0.7)
+# angular_speed = rospy.get_param("~angular_speed", 0.7)
+angular_speed = 0.7
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 rate = 20  # 20Hz
@@ -47,9 +48,17 @@ def handle_rot_request(req):
 	move_cmd = Twist()
 	cmd_vel.publish(move_cmd)
 	rospy.sleep(1.0)
+
+	goal_angle = req.turn_angle  # get angle, in degrees
+
+	if goal_angle > 0:
+		move_cmd.angular.z = angular_speed
+
+	if goal_angle < 0:
+		move_cmd.angular.z = -angular_speed
 	
-	# Set the movement command to a rotation
-	move_cmd.angular.z = angular_speed
+	# # Set the movement command to a rotation
+	# move_cmd.angular.z = angular_speed
 	
 	# Track the last angle measured
 	# curr_angle = quat_to_angle(global_current_orientation.jackal_rot.orientation)

@@ -134,8 +134,11 @@ def get_jackal_pos_server():
 	rospy.init_node('get_jackal_pos_server')
 	s = rospy.Service('get_jackal_pos', JackalPos, handle_pos_request)
 
-	rospy.Subscriber('/navsat/fix', NavSatFix, pos_callback)  # Subscribe to Jackal's /navsat/fix topic
-	print "get_jackal_pos_server subscribed to /navsat/fix from Jackal.."
+	# rospy.Subscriber('/navsat/fix', NavSatFix, pos_callback)  # Subscribe to Jackal's /navsat/fix topic
+	# print "get_jackal_pos_server subscribed to /navsat/fix from Jackal.."
+
+	rospy.Subscriber('/fix', NavSatFix, pos_callback)  # Subscribe to Jackal's /fix topic (reach units)
+	print "get_jackal_pos_server subscribed to /fix from Jackal.."
 
 	print "Jackal pos server ready.."
 	rospy.spin()

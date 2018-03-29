@@ -97,32 +97,65 @@ class SingleGoalNav():
 		x_start, y_start = position.x, position.y  # set start positions
 
 
-		# # Determine starting point angle..
-		# A = (0, 0, rotation)  # note: angle in radians
-		# B = (1, 1, rotation)  # end 1m x 1m away, and orient to original rotation
+		# Test 1: The 1m X, 1m Y "path" in the lab..
+		_track = NavTracks().get_track('track1')
+		A = (_track[0][0], _track[0][1], rotation)
+		B = (_track[1][0], _track[1][1], rotation)
+		x_diff = B[0] - A[0]
+		y_diff = B[1] - A[1]
 
 
-		# Attempt at single goal navigation to flag..
-		_track = NavTracks().get_track('track2')
-
-		# Need to get current Jackal pos in UTM to set as point A..
-		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
-		curr_pose_utm = utm.from_latlon(curr_pose.latitude, curr_pose.longitude)
-
-		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-		B = (_track[0], _track[1], rotation)
+		# # Test 2: Attempt at single goal navigation to flag..
+		# _track = NavTracks().get_track('track2')
+		# curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
+		# curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
+		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
+		# B = (_track[0][0], _track[0][1], rotation)
 
 
-		# Determine angle to turn based on IMU..
-		turn_angle = self.determine_turn_angle(A, B)
-		print("Telling Jackal to turn {} degreess..".format(turn_angle))
-		self.call_jackal_rot_service(turn_angle)
-		print("Finished turning..")
+		print("Initial position and orientation: {}".format(A))
+		print("Current angle in degrees: {}".format(degrees(A[2])))
 
-		drive_distance = self.determine_drive_distance(A, B)
-		print("Driving Jackal {} meters..".format(drive_distance))
-		self.call_jackal_pos_service(drive_distance)
-		print("Finished driving..")
+
+		_trans_angle = self.transform_imu_frame(degrees(A[2]))
+
+		print("Transformed angle: {}".format(_trans_angle))
+
+		AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
+
+		print("AB initial angle: {}".format(degrees(AB_theta0)))
+
+		AB_angle = None
+		if x_diff > 0 and y_diff > 0:
+			# Point B in quadrant 1..
+			AB_angle = AB_theta0
+		elif x_diff < 0 and y_diff > 0:
+			# Point B in quadrant 2..
+			AB_angle = 180 - AB_theta0
+		elif x_diff < 0 and y_diff < 0:
+			# Point B in quadrant 3..
+			AB_angle = 180 + AB_theta0
+		elif x_diff > 0 and y_diff < 0:
+			# Point B in quadrant 4..
+			AB_angle = 360 - AB_theta0
+
+		print("AB angle after transform: {}".format(degrees(AB_angle)))
+
+		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
+
+		print("Calculated turning angle: {}".format(turn_angle))
+
+
+		# # # Determine angle to turn based on IMU..
+		# # turn_angle = self.determine_turn_angle(A, B)
+		# print("Telling Jackal to turn {} degreess..".format(turn_angle))
+		# self.call_jackal_rot_service(turn_angle)
+		# print("Finished turning..")
+
+		# drive_distance = self.determine_drive_distance(A, B)
+		# print("Driving Jackal {} meters..".format(drive_distance))
+		# self.call_jackal_pos_service(drive_distance)
+		# print("Finished driving..")
 
 		print("Stopping Jackal..")
 		self.shutdown()
@@ -152,6 +185,41 @@ class SingleGoalNav():
 		# # 1. Recreate turn command from yesterday's jackal_rot_server.py testing: manually telling
 		# # the jackal rotation server to turn the jackal 45 degrees..
 		# self.call_jackal_rot_service(45)  # tell jackal to turn 45 degrees
+
+
+	# def determine_quadrant(self, angle):
+	# 	"""
+	# 	Determines what quadrant pt is in relative to
+	# 	cardinal directions and IMU coordinate frame.
+	# 	"""
+	# 	if current_angle > 0 && current_angle < 90:
+	# 		# robot is facing N-W quadrant..
+	# 		return 2
+
+	# 	elif current_angle > 90 && current_angle < 180:
+	# 		# robot is facing W-S quadrant..
+	# 		return 3
+
+	# 	elif current_angle > -90 && current_angle < 0:
+	# 		# robot is facing N-E quadrant..
+	# 		return 1
+
+	# 	elif current_angle > -180 && current_angle < -90:
+	# 		# robot is facing E-S quadrant..
+	# 		return 4
+
+
+	def transform_imu_frame(self, theta0):
+		"""
+		Transform initial robot angle in IMU frame to have 0 degrees
+		in East direction, going 0->360 CCW.
+		"""
+		_trans = theta0 + 90  # shift value 90 degrees from N->E
+
+		if _trans > -180 and _trans < 0:
+			_trans = 360 + _trans  # transform angle to 0->360 if in -180->0 quadrants
+
+		return _trans
 
 
 	def determine_turn_angle(self, A, B):

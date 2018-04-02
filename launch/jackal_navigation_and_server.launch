@@ -7,9 +7,10 @@
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
 	<!-- Run the jackal_rot_server -->
-	<node="get_jackal_rot_server" pkg="simple_navigation_goals" type="jackal_rot_server.py" />
+	<!-- <node="get_jackal_rot_server" pkg="simple_navigation_goals" type="jackal_rot_server.py" /> -->
+	<node pkg="rosservice" type="rosservice" name="rotation_server" args="call --wait /jackal_rot_server" />
 
 	<!-- Run the jackal_pos_server -->
-	<node="get_jackal_pos_server" pkg="simple_navigation_goals" type="jackal_pos_server.py" />	
+	<!-- <node="get_jackal_pos_server" pkg="simple_navigation_goals" type="jackal_pos_server.py" />	 -->
 
 </launch>

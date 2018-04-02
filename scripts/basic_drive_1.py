@@ -117,33 +117,43 @@ class SingleGoalNav():
 		print("Current angle in degrees: {}".format(degrees(A[2])))
 
 
-		_trans_angle = self.transform_imu_frame(degrees(A[2]))
+		# Attempting to use dot product formula to determine angle
+		# between A and B..
+		turn_angle = self.get_angle_between_vectors(A, B)
+		print("Angle between points A and B: {}".format(degrees(turn_angle)))
 
-		print("Transformed angle: {}".format(_trans_angle))
+		# Still need to determine if turn is left or right based on X and Y diffs..
+		if x_diff > 0:
+			print("Turning CW {} degrees..".format(degrees(turn_angle)))
+			turn_angle = turn_angle
 
-		AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
+		if x_diff < 0:
+			print("Turning CCW {} degrees..".format(degrees(turn_angle)))
+			turn_angle = -turn_angle
 
-		print("AB initial angle: {}".format(degrees(AB_theta0)))
 
-		AB_angle = None
-		if x_diff > 0 and y_diff > 0:
-			# Point B in quadrant 1..
-			AB_angle = AB_theta0
-		elif x_diff < 0 and y_diff > 0:
-			# Point B in quadrant 2..
-			AB_angle = 180 - AB_theta0
-		elif x_diff < 0 and y_diff < 0:
-			# Point B in quadrant 3..
-			AB_angle = 180 + AB_theta0
-		elif x_diff > 0 and y_diff < 0:
-			# Point B in quadrant 4..
-			AB_angle = 360 - AB_theta0
 
-		print("AB angle after transform: {}".format(degrees(AB_angle)))
-
-		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
-
-		print("Calculated turning angle: {}".format(turn_angle))
+		##### Working, manual way for determining turn angle: #####
+		# _trans_angle = self.transform_imu_frame(degrees(A[2]))
+		# print("Transformed angle: {}".format(_trans_angle))
+		# AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
+		# print("AB initial angle: {}".format(degrees(AB_theta0)))
+		# AB_angle = None
+		# if x_diff > 0 and y_diff > 0:
+		# 	# Point B in quadrant 1..
+		# 	AB_angle = AB_theta0
+		# elif x_diff < 0 and y_diff > 0:
+		# 	# Point B in quadrant 2..
+		# 	AB_angle = 180 - AB_theta0
+		# elif x_diff < 0 and y_diff < 0:
+		# 	# Point B in quadrant 3..
+		# 	AB_angle = 180 + AB_theta0
+		# elif x_diff > 0 and y_diff < 0:
+		# 	# Point B in quadrant 4..
+		# 	AB_angle = 360 - AB_theta0
+		# print("AB angle after transform: {}".format(degrees(AB_angle)))
+		# turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
+		# print("Calculated turning angle: {}".format(turn_angle))
 
 
 		# # # Determine angle to turn based on IMU..
@@ -161,52 +171,20 @@ class SingleGoalNav():
 		self.shutdown()
 
 
+
+	def get_angle_between_vectors(self, A, B):
 		"""
-		Scenario 1 -- Determine angle to turn to face flag, then travel straight to the flag.
+		Uses the dot product to determine the angle
+		between points A and B.
 
-		Order of events:
-			1. Determine Jackal's current position and orientation.
-			2. Calculate angle for Jackal to turn to travel toward goal flag.
-			3. Turn Jackal toward the goal flag, then pause for a second.
-			4. Calculate distance between Jackal's position and goal flag.
-			5. Drive Jackal to flag using distance calculated in 4.
+		cos(theta) = (A dot B) / (||A|| + ||B||)
 		"""
+		dot_prod = A[0]*B[0] + A[1]*B[1]
+		len_A = math.sqrt(A[0]**2 + A[1]**2)
+		len_B = math.sqrt(B[0]**2 + B[1]**2)
 
-		# track1 = [[1, 0], [1, 1]]  # creating coords for 1m forward, 1m left track
+		return math.acos(dot_prod / (len_A + len_B))
 
-		# (position, rotation) = self.get_odom()
-
-		# print("Jackal's current position: {}".format(position))  # get_odom() seems to already do the above 2 commented out steps
-		# print("Jackal's current orientation: {}".format(rotation))
-
-		# rospy.sleep(1)
-
-
-		# # 1. Recreate turn command from yesterday's jackal_rot_server.py testing: manually telling
-		# # the jackal rotation server to turn the jackal 45 degrees..
-		# self.call_jackal_rot_service(45)  # tell jackal to turn 45 degrees
-
-
-	# def determine_quadrant(self, angle):
-	# 	"""
-	# 	Determines what quadrant pt is in relative to
-	# 	cardinal directions and IMU coordinate frame.
-	# 	"""
-	# 	if current_angle > 0 && current_angle < 90:
-	# 		# robot is facing N-W quadrant..
-	# 		return 2
-
-	# 	elif current_angle > 90 && current_angle < 180:
-	# 		# robot is facing W-S quadrant..
-	# 		return 3
-
-	# 	elif current_angle > -90 && current_angle < 0:
-	# 		# robot is facing N-E quadrant..
-	# 		return 1
-
-	# 	elif current_angle > -180 && current_angle < -90:
-	# 		# robot is facing E-S quadrant..
-	# 		return 4
 
 
 	def transform_imu_frame(self, theta0):

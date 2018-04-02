@@ -6,7 +6,10 @@
 	<!-- Launch file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
+	<!-- Run the jackal_rot_server -->
+	<node="get_jackal_rot_server" pkg="simple_navigation_goals" type="jackal_rot_server.py" />
+
 	<!-- Run the jackal_pos_server -->
-	
+	<node="get_jackal_pos_server" pkg="simple_navigation_goals" type="jackal_pos_server.py" />	
 
 </launch>

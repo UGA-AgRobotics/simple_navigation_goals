@@ -97,20 +97,35 @@ class SingleGoalNav():
 		x_start, y_start = position.x, position.y  # set start positions
 
 
-		# Test 1: The 1m X, 1m Y "path" in the lab..
-		_track = NavTracks().get_track('track1')
-		A = (_track[0][0], _track[0][1], rotation)
-		B = (_track[1][0], _track[1][1], rotation)
+		# # Test 1: The 1m X, 1m Y "path" in the lab..
+		# _track = NavTracks().get_track('track1')
+		# A = (_track[0][0], _track[0][1], rotation)
+		# B = (_track[1][0], _track[1][1], rotation)
+
+
+		# Test 2: Attempt at single goal navigation to flag..
+		_track = NavTracks().get_track('track2')
+		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
+
+		print("Current position from pose server: {}".format(curr_pose))
+		print("Positions attributes: {}".format(dir(curr_pose)))
+
+
+		_lat = curr_pose.jackal_fix.latitude
+		_lon = curr_pose.jackal_fix.longitude
+
+		print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
+
+		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
+
+		print("Jackal's position in UTM: {}".format(curr_pose_utm))
+
+		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
+		B = (_track[0][0], _track[0][1], rotation)
+
+
 		x_diff = B[0] - A[0]
 		y_diff = B[1] - A[1]
-
-
-		# # Test 2: Attempt at single goal navigation to flag..
-		# _track = NavTracks().get_track('track2')
-		# curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
-		# curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-		# B = (_track[0][0], _track[0][1], rotation)
 
 
 		print("Initial position and orientation: {}".format(A))
@@ -127,35 +142,43 @@ class SingleGoalNav():
 
 		AB_angle = None
 		if x_diff > 0 and y_diff > 0:
+			print("p1 in quadrant: {}".format(1))
 			# Point B in quadrant 1..
-			AB_angle = AB_theta0
+			AB_angle = degrees(AB_theta0)
 		elif x_diff < 0 and y_diff > 0:
+			print("p1 in quadrant: {}".format(2))
 			# Point B in quadrant 2..
-			AB_angle = 180 - AB_theta0
+			AB_angle = 180 - degrees(AB_theta0)
 		elif x_diff < 0 and y_diff < 0:
+			print("p1 in quadrant: {}".format(3))
 			# Point B in quadrant 3..
-			AB_angle = 180 + AB_theta0
+			AB_angle = 180 + degrees(AB_theta0)
 		elif x_diff > 0 and y_diff < 0:
+			print("p1 in quadrant: {}".format(4))
 			# Point B in quadrant 4..
-			AB_angle = 360 - AB_theta0
+			AB_angle = 360 - degrees(AB_theta0)
 
-		print("AB angle after transform: {}".format(degrees(AB_angle)))
+		print("AB angle after transform: {}".format(AB_angle))
 
 		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
+
+		# if x_diff < 0:
+		# 	turn_angle = -turn_angle
+
 
 		print("Calculated turning angle: {}".format(turn_angle))
 
 
 		# # # Determine angle to turn based on IMU..
 		# # turn_angle = self.determine_turn_angle(A, B)
-		# print("Telling Jackal to turn {} degreess..".format(turn_angle))
-		# self.call_jackal_rot_service(turn_angle)
-		# print("Finished turning..")
+		print("Telling Jackal to turn {} degreess..".format(turn_angle))
+		self.call_jackal_rot_service(turn_angle)
+		print("Finished turning..")
 
-		# drive_distance = self.determine_drive_distance(A, B)
-		# print("Driving Jackal {} meters..".format(drive_distance))
-		# self.call_jackal_pos_service(drive_distance)
-		# print("Finished driving..")
+		drive_distance = self.determine_drive_distance(A, B)
+		print("Driving Jackal {} meters..".format(drive_distance))
+		self.call_jackal_pos_service(drive_distance)
+		print("Finished driving..")
 
 		print("Stopping Jackal..")
 		self.shutdown()

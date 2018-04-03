@@ -162,10 +162,6 @@ class SingleGoalNav():
 
 		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
 
-		# if x_diff < 0:
-		# 	turn_angle = -turn_angle
-
-
 		print("Calculated turning angle: {}".format(turn_angle))
 
 

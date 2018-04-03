@@ -18,7 +18,8 @@ class NavTracks(object):
 		self.units = ''  # units of points (e.g., utm)
 		self.track_data = []  # list of list, e.g., [[x0,y0],[x1,y1]]
 
-		self.track1 = [[0,0],[1,1]]  # simple test of 1m x 1m
+		# self.track1 = [[0,0],[1,1]]  # simple test of 1m x 1m
+		self.track1 = [[1,1], [2,2]]
 
 		self.track2 = [[259740.58617625054, 3485057.3168547815]]  # single flag goal behind annex
 

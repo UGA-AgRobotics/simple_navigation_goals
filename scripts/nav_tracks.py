@@ -23,6 +23,8 @@ class NavTracks(object):
 
 		self.track2 = [[259740.58617625054, 3485057.3168547815]]  # single flag goal behind annex
 
+		self.track3 = [[259742.0772760457, 3485056.984245597]]  # First flag from 4-5-18 eng. annex test row 1
+
 
 	def get_track(self, track):
 

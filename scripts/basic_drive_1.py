@@ -104,7 +104,7 @@ class SingleGoalNav():
 
 
 		# Test 2: Attempt at single goal navigation to flag..
-		_track = NavTracks().get_track('track2')
+		_track = NavTracks().get_track('track3')
 		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
 
 		print("Current position from pose server: {}".format(curr_pose))

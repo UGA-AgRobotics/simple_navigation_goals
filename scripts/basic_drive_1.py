@@ -24,16 +24,6 @@ from nav_tracks import NavTracks
 
 
 
-# TODO: Move this somewhere that makes sense
-TestFlagLat = 31.4753776881
-TestFlagLon = -83.5289577629
-TestFlagUTM = utm.from_latlon(TestFlagLat, TestFlagLon)
-
-global_current_orientation = None
-A, B = None, None  # start and finish points, A-->B
-
-
-
 class SingleGoalNav():
 	"""
 	Testing Jackal navigation to a single goal/flag. Determines
@@ -53,6 +43,8 @@ class SingleGoalNav():
 		
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(rate)
+
+		self.step_size = 0.5  # step size to break up A->B distances (in meters)
 		
 		# Set the parameters for the target square
 		goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
@@ -106,6 +98,7 @@ class SingleGoalNav():
 		# Test 2: Attempt at single goal navigation to flag..
 		_track = NavTracks().get_track('track3')
 		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
+
 
 		print("Current position from pose server: {}".format(curr_pose))
 		print("Positions attributes: {}".format(dir(curr_pose)))

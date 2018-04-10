@@ -81,12 +81,20 @@ class DataMassager(object):
 		"""
 		Input lat/lon format: [degree, minute, second]
 		"""
-		new_pos = self.dec_pos
-		new_pos = {
-			'lat': dsm_pos['lat']['deg'] + dsm_pos['lat']['min']/60.0 + dsm_pos['lat']['sec']/3600.0,
-			'lon': dsm_pos['lon']['deg'] + dsm_pos['lon']['min']/60.0 + dsm_pos['lon']['sec']/3600.0
-		}
-		
+		# new_pos = self.dec_pos()
+		new_pos = {}
+		# new_lat, new_lon = None, None
+		dec_pos = None
+
+		for key, val in dsm_pos.items():
+			# looping lat/lon key:vals
+			if val.get('deg') < 0:
+				dec_pos = dsm_pos[key]['deg'] - dsm_pos[key]['min']/60.0 - dsm_pos[key]['sec']/3600.0
+			else:
+				dec_pos = dsm_pos[key]['deg'] + dsm_pos[key]['min']/60.0 + dsm_pos[key]['sec']/3600.0
+			
+			new_pos[key] = dec_pos
+
 		return new_pos
 
 
@@ -97,7 +105,7 @@ class DataMassager(object):
 		Returns: [lat,lon], where lat/lon = [deg, min, sec]
 		"""
 		new_pos = self.dmsPos
-		for key, val in dec_pos:
+		for key, val in dec_pos.items():
 			new_pos[key] = {
 				'deg': int(val),
 				'min': int((val % 1) * 60.0),
@@ -180,16 +188,27 @@ class DataMassager(object):
 
 
 if __name__ == '__main__':
+
 	# Testing procedure follows:
 	filename = sys.argv[1]  # get filename from command line
 	filename_out = "{}_updated.json".format(filename.split('.')[0])
+
 	datmass = DataMassager()
+
 	print("Reading in goals file: {}".format(filename))
+
 	datmass.read_goals_file(filename)
+
 	print("Goals file read.")
 	print("Filling out goals file with missing formats..")
+
 	updated_goals = datmass.fill_out_goals_file()
+	datmass.goals['goals'] = updated_goals
+
 	print("Goals file now updated.")
 	print("Saving updated goals file as: {}..".format(filename_out))
-	datmass.save_goals_file(filename_out, updated_goals)
+
+	# datmass.save_goals_file(filename_out, updated_goals)
+	datmass.save_goals_file(filename_out, datmass.goals)
+
 	print("Done.")

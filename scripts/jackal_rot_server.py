@@ -17,7 +17,8 @@ base_frame = '/base_link'
 
 cmd_vel = rospy.Publisher('/cmd_vel', Twist)
 # angular_speed = rospy.get_param("~angular_speed", 0.7)
-angular_speed = 0.7
+angular_speed = 0.5
+# angular_speed = 1.0
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 rate = 20  # 20Hz

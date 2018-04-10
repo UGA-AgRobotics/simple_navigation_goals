@@ -30,7 +30,8 @@ tf_listener = tf.TransformListener()
 odom_frame = '/odom'
 base_frame = '/base_link'
 cmd_vel = rospy.Publisher('/cmd_vel', Twist)
-linear_speed = 0.2  # units of m/s
+linear_speed = 0.3  # units of m/s
+# linear_speed = 1.0
 rate = 20  # 20Hz
 
 

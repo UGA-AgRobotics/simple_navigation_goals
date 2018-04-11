@@ -1,6 +1,0 @@
-<launch>
-
-	<!-- Run the jackal_pos_server -->
-	<node name="jackal_pos_server" pkg="simple_navigation_goals" type="jackal_pos_server" />
-	
-</launch>

@@ -1,0 +1,9 @@
+<launch>
+
+	<!-- Run the jackal_pos_server -->
+	<node name="jackal_pos_server_node" pkg="simple_navigation_goals" type="jackal_pos_server.py" />
+
+	<!-- Run the jackal_rot_server -->
+	<node name="jackal_rot_server_node" pkg="simple_navigation_goals" type="jackal_rot_server.py" />
+	
+</launch>

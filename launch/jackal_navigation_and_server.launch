@@ -1,15 +1,27 @@
 <launch>
 	
 	<!-- Launch file for Jackal navigation demo -->
-	<include file="$(find jackal_navigation)/launch/odom_navigation_demo.launch" />
+	<!--<include file="$(find jackal_navigation)/launch/odom_navigation_demo.launch" />-->
 
 	<!-- Launch file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
+	<!-- Node to read data from reach via serial -->
+	<node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="reach_nmea_driver" respawn="false">
+		<param name="port" value="/dev/ttyACM0"/>
+		<param name="baud" value="115200"/>
+		<!--<param name="frame_id" value="reach_link"/>-->
+
+		<!-- published remap -->
+		<!--<remap from="/fix" to="/reach/fix"/>-->
+		<!--<remap from="/vel" to="/reach/vel"/>-->
+		<!--<remap from="/time_reference" to="/reach/time_reference"/>-->
+	</node>
+
 	<!-- Run the jackal_pos_server -->
-	<node name="jackal_pos_server_node" pkg="simple_navigation_goals" type="jackal_pos_server.py" />
+	<!--<node name="jackal_pos_server_node" pkg="simple_navigation_goals" type="jackal_pos_server.py" />-->
 
 	<!-- Run the jackal_rot_server -->
-	<node name="jackal_rot_server_node" pkg="simple_navigation_goals" type="jackal_rot_server.py" />
+	<!--<node name="jackal_rot_server_node" pkg="simple_navigation_goals" type="jackal_rot_server.py" />-->
 
 </launch>

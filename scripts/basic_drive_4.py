@@ -22,6 +22,9 @@ import math
 from math import radians, copysign, sqrt, pow, pi, degrees
 import utm
 import PyKDL
+import numpy as np
+import matplotlib.pyplot as plt
+import dubins
 
 from nav_tracks import NavTracks
 
@@ -95,25 +98,41 @@ class SingleGoalNav():
 		(position, rotation) = self.get_odom()  # get starting position values
 
 		# Test 2: Attempt at single goal navigation to flag..
-		_track = NavTracks().get_track('track4')
+		# _track = NavTracks().get_track('track4')
+		_track = NavTracks().get_track('track4')  # just one initial goal point for initial dubins testing..
+
+
+
+
+
+		qs_array = []
+		turning_radius = 1.0
+		step_size = 0.5
+
 
 
 		# Looping track points here (items of [easting, northing]):
-		for goal_pos in _track:
+		# for goal_pos in _track:
+		for _track_int in range(0, len(_track) - 1):
 
+			goal_pos = _track[_track_int]
+			future_goal_pos = _track[_track_int + 1]  # using future goal pos to determine orientation at current goal pos
+			x_diff = future_goal_pos[0] - goal_pos[0]
+			y_diff = future_goal_pos[1] - goal_pos[1]
+			goal_orientation = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
 
-			# step size idea: break up drive between A->B by a step size increment.
-			# NOTE: This may have to be fundamentally changed, as it's very request/response at the moment
-			# instead of being "reactive". Robot needs to be smoothly driving and correcting itself along the way...
-
-
-			# For now, how would the distance be broken up? just assumign linearity and divide it up into small chunks???
+			# Assuming Jackal is somewhat facing point (I or II quadrant):
+			if x_diff > 0:
+				# turn right (relative to north)
+				pass
+			elif x_diff < 0:
+				# turn left (relative to north)
+				goal_orientation = math.pi + goal_orientation
 
 			(position, rotation) = self.get_odom()  # get starting position values
 			curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
 
 			print("Current position from pose server: {}".format(curr_pose))
-			print("Positions attributes: {}".format(dir(curr_pose)))
 
 			_lat = curr_pose.jackal_fix.latitude
 			_lon = curr_pose.jackal_fix.longitude
@@ -122,41 +141,76 @@ class SingleGoalNav():
 
 			curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
 
-			A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-			B = (goal_pos[0], goal_pos[1], rotation)
-
-			# x_diff = B[0] - A[0]
-			# y_diff = B[1] - A[1]
+			A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
+			B = (goal_pos[0], goal_pos[1], goal_orientation)  # use calculated orientation above
 
 			print("Jackal's position in UTM: {}".format(A))
 			print("Goal pos: {}".format(goal_pos))
 			print("Jackal's goal position in UTM: {}".format(B))
+			print("Jackal's goal orientation: {}".format(degrees(goal_orientation)))
+
+			qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
+			qs = np.array(qs)
+
+			dubins_data = {
+				'q0': A,
+				'q1': B,
+				'qs': qs
+			}
+			qs_array.append(dubins_data)
 
 
-			drive_distance = self.determine_drive_distance(A, B)  # get scalar distance b/w A and B
+			# self.plot_dubins_path(dubins_path, A, B, show=True)
 
-			num_steps = int(drive_distance / self.step_size)  # number of steps from current position to goal divided in step sizes
-
-			print("Drive distance calculated: {}".format(drive_distance))
-			print("Numer of steps to goal: {}".format(num_steps))
-
-
-			for i in range(0, num_steps):
-
-				print("{} drive!".format(i))
+			for pos_tuple in qs:
+				# loop each x,y,orientation tuple from dubins model..
+				self.p2p_drive_routine(pos_tuple)  # will do calc-turn-calc-drive as request-response
 
 
-			# performs a turn and drive from its current position to goal_pos (format: [utm X, utm Y])
-			# self.p2p_drive_routine(goal_pos)  # put drive routine in a function for integrating step sizes..
+		# track_array = np.array(_track)  # list of list into np array
 
+		# self.plot_full_dubins_path(qs_array, track_array[:,0], track_array[:,1])  # Plot model path
 
-
-
-		# print("Stopping Jackal..but spinning a doughnut first!")
-		# self.call_jackal_rot_service(360)
-		# print("Ok, now stopping for real..")
+		print("Stopping Jackal..but spinning a doughnut first!")
+		self.call_jackal_rot_service(360)
+		print("Ok, now stopping for real..")
 
 		self.shutdown()
+
+
+
+	def plot_dubins_path(self, qs, q0, q1, show=True):
+		"""
+		Plots the dubins path between a starting and ending point.
+		Inputs:
+			qs - dubins path data [[x,y,angle], ..]
+			q0 - initial position [x,y,angle]
+			q1 - target position [x,y,angle]
+		Returns: None
+		"""
+
+		print("QS Array: {}".format(qs))
+
+		xs = qs[:,0]
+		ys = qs[:,1]
+		us = xs + np.cos(qs[:, 2])
+		vs = ys + np.sin(qs[:, 2])
+		plt.plot(q0[0], q0[1], 'gx', markeredgewidth=4, markersize=10)  # actual start point
+		plt.plot(q1[0], q1[1], 'rx', markeredgewidth=4, markersize=10)  # actual end point
+		plt.plot(xs, ys, 'b-')
+		plt.plot(xs, ys, 'r.')
+		plt.plot(qs[0][0], qs[0][1], 'go', markersize=5)  # dubins start point
+		plt.plot(qs[-1][0], qs[-1][1], 'ro', markersize=5)  # dubins end point
+		# plt.plot(sample_points[:,0], sample_points[:,1], 'k-')  # plot sample points path
+		for i in xrange(qs.shape[0]):
+			plt.plot([xs[i], us[i]], [ys[i], vs[i]],'r-')
+
+		# Adding x/y range for plots:
+		# plt.xlim(min(qs[:,0]) - 1, max(qs[:,0]) + 1)
+		# plt.ylim(min(qs[:,1]) - 1, max(qs[:,1]) + 1)
+
+		if show:
+			plt.show()
 
 
 
@@ -171,7 +225,6 @@ class SingleGoalNav():
 		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
 
 		print("Current position from pose server: {}".format(curr_pose))
-		print("Positions attributes: {}".format(dir(curr_pose)))
 
 		_lat = curr_pose.jackal_fix.latitude
 		_lon = curr_pose.jackal_fix.longitude
@@ -183,10 +236,14 @@ class SingleGoalNav():
 		print("Jackal's position in UTM: {}".format(curr_pose_utm))
 
 		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-		B = (goal_pos[0], goal_pos[1], rotation)
-
+		B = (goal_pos[0], goal_pos[1], goal_pos[2])
 		x_diff = B[0] - A[0]
 		y_diff = B[1] - A[1]
+
+		print("A: {}".format(A))
+		print("B: {}".format(B))
+		print("x_diff: {}".format(x_diff))
+		print("y_diff: {}".format(y_diff))
 
 		_trans_angle = self.transform_imu_frame(degrees(A[2]))
 		AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
@@ -212,6 +269,22 @@ class SingleGoalNav():
 
 
 
+	def plot_full_dubins_path(self, qs_array, x_path=None, y_path=None):
+		"""
+		Like plot_dubins_path() function, but plots a full set of points
+		instead a single A -> B two point dataset.
+		"""
+		# Initial setup: No directional plotting, just dots and path at the moment..
+
+		for qs in qs_array:
+			self.plot_dubins_path(qs['qs'], qs['q0'], qs['q1'], show=False)
+
+		plt.plot(x_path, y_path, 'bo')  # overlay path points onto plot
+
+		plt.show()  # display plot
+
+
+
 	def transform_angle_by_quadrant(self, initial_angle, x_diff, y_diff):
 		"""
 		Takes the change in X and Y to determine how the Jackal
@@ -233,8 +306,11 @@ class SingleGoalNav():
 			print("p1 in quadrant: {}".format(4))
 			# Point B in quadrant 4..
 			return 360 - degrees(initial_angle)
+		elif x_diff == 0 and y_diff == 0:
+			# No change in angle..
+			return 0.0
 		else:
-			raise "Error occurred in basic_drive_3/transform_angle_by_quadrant func.."
+			raise "!Error occurred in basic_drive_3/transform_angle_by_quadrant func.."
 
 
 

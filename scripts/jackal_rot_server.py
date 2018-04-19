@@ -20,6 +20,7 @@ cmd_vel = rospy.Publisher('/cmd_vel', Twist)
 angular_speed = 0.5
 # angular_speed = 1.0
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
+# angular_tolerance = rospy.get_param("~angular_tolerance", radians(0.1)) # degrees to radians
 
 rate = 20  # 20Hz
 # r = rospy.Rate(rate)
@@ -72,7 +73,7 @@ def handle_rot_request(req):
 	execute_turn(position, rotation, goal_angle, move_cmd)
 		
 	# Stop the robot when we are done
-	cmd_vel.publish(Twist())
+	# cmd_vel.publish(Twist())
 
 	# Return current orientation of Jackal..
 	return JackalRotResponse(global_current_orientation)
@@ -105,6 +106,9 @@ def execute_turn(position, rotation, goal_angle, move_cmd):
 		
 		turn_angle += delta_angle
 		last_angle = rotation
+
+		if delta_angle == 0.0:
+			break
 
 	return True
 

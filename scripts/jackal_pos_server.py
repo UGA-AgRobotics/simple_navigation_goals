@@ -75,7 +75,7 @@ def handle_pos_request(req):
 	drive_forward(position, rotation, goal_distance, move_cmd)
 
 	# Stop the robot when we are done
-	cmd_vel.publish(Twist())
+	# cmd_vel.publish(Twist())
 
 	# Return current position of Jackal..
 	return JackalPosResponse(global_current_position)

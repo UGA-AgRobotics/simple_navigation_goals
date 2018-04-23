@@ -106,9 +106,8 @@ class SingleGoalNav():
 
 
 		qs_array = []
-		turning_radius = 1.0
-		# step_size = 0.5
-		step_size = 0.2
+		turning_radius = 2.5
+		step_size = 0.5
 
 
 		############ TESTING A SINGLE A->B ################################
@@ -123,8 +122,13 @@ class SingleGoalNav():
 
 		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
 
+		transformed_angle = rotation
+		print("Initial angle from Jackal IMU: {}".format(transformed_angle))
+		transformed_angle = self.transform_imu_frame(degrees(transformed_angle))
+		print("Angle after IMU transform: {}".format(transformed_angle))  # i think this is the appropriate transformed angle
+
 		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
-		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
+		A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))  # initial position of jackal
 		B = (_track[0][0], _track[0][1], math.pi)  # use calculated orientation above
 
 		print("Jackal's current angle in degrees: {}".format(math.degrees(A[2])))
@@ -139,21 +143,6 @@ class SingleGoalNav():
 		print("initial angle: {}".format(math.degrees(AB_theta0)))
 		print("AB angle: {}".format(AB_angle))
 
-		# A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(AB_angle))
-
-		# trying just the single imu transform function:
-		transformed_angle = self.transform_imu_frame(math.degrees(rotation))
-		print("Transform angle 1 : {}".format(transformed_angle))
-		# transformed_angle = self.initiate_angle_transform(A, B)
-		# print("Transform angle 2 : {}".format(transformed_angle))
-		# transformed_angle = self.transform_angle_by_quadrant(rotation, x_diff, y_diff)
-		# print("Transform angle 3 : {}".format(transformed_angle))
-		A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))
-		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation + math.pi/4)
-		# print(">>> A with transformed angle: {}".format(A))
-		# print("Jackal's goal orientation: {}".format(degrees(goal_orientation)))
-		print("Jackal's transformed angle in degrees: {}".format(math.degrees(A[2])))
-
 		qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
 		qs = np.array(qs)
 
@@ -164,103 +153,19 @@ class SingleGoalNav():
 		}
 		qs_array.append(dubins_data)
 
+		print("Single dubins path data: {}".format(qs))
+
+		goals_array = self.build_goals_from_dubins(qs)  # NOTE: This includes the position the Jackal is currently, so skip first goal
+
+		print("Jackal's current UTM position: {}".format(curr_pose_utm))
+		print("Goals array for Jackal to follow: {}".format(goals_array))
+
 		# self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1])
 
-		for pos_tuple in qs:
-			self.p2p_drive_routine(pos_tuple)  # will do calc-turn-calc-drive as request-response
+		for goal in goals_array[1:]:
+			self.p2p_drive_routine(goal)  # will do calc-turn-calc-drive as request-response
 
 		#############################################################################################
-
-
-
-
-
-		# # Looping track points here (items of [easting, northing]):
-		# # for goal_pos in _track:
-		# for _track_int in range(0, len(_track) - 1):
-
-		# 	(position, rotation) = self.get_odom()  # get starting position values
-
-		# 	goal_pos = _track[_track_int]
-		# 	future_goal_pos = _track[_track_int + 1]  # using future goal pos to determine orientation at current goal pos
-		# 	x_diff = future_goal_pos[0] - goal_pos[0]
-		# 	y_diff = future_goal_pos[1] - goal_pos[1]
-		# 	goal_orientation = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
-
-		# 	print(">>> Initial goal orientation (degrees): {}".format(math.degrees(goal_orientation)))
-
-		# 	# Assuming Jackal is somewhat facing point (I or II quadrant):
-		# 	if x_diff > 0:
-		# 		# turn right (relative to north)
-		# 		pass
-		# 	elif x_diff < 0:
-		# 		# turn left (relative to north)
-		# 		goal_orientation = math.pi + goal_orientation
-
-		# 	curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
-
-		# 	print("Current position from pose server: {}".format(curr_pose))
-
-		# 	_lat = curr_pose.jackal_fix.latitude
-		# 	_lon = curr_pose.jackal_fix.longitude
-
-		# 	print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
-
-		# 	curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-
-		# 	# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
-		# 	A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
-		# 	B = (goal_pos[0], goal_pos[1], goal_orientation)  # use calculated orientation above
-
-		# 	print("Jackal's current angle in degrees: {}".format(math.degrees(A[2])))
-
-
-		# 	# transformed_angle = self.initiate_angle_transform(A, B)  # in degrees
-		# 	# print(">>> Transform angle in degrees: {}".format(transformed_angle))
-
-		# 	# x_diff = B[0] - A[0]
-		# 	# y_diff = B[1] - A[1]
-		# 	# AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
-		# 	# AB_angle = self.transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
-		# 	# # current imu angle transformed into jackal's frame:
-		# 	# print("Transformed angle, pre turning considerations: {}".format(AB_angle))
-
-
-		# 	# trying just the single imu transform function:
-		# 	transformed_angle = self.transform_imu_frame(math.degrees(rotation))
-
-		# 	print("Angle after single IMU transform: {}".format(transformed_angle))
-
-		# 	# print(">>> Original A: {}".format(A))
-		# 	# # reset A to have transformed angle?
-		# 	A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))
-		# 	print(">>> A with transformed angle: {}".format(A))
-
-
-		# 	# print("Jackal's position in UTM: {}".format(A))
-		# 	# print("Goal pos: {}".format(goal_pos))
-		# 	# print("Jackal's goal position in UTM: {}".format(B))
-		# 	print("Jackal's goal orientation: {}".format(degrees(goal_orientation)))
-
-		# 	qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
-		# 	qs = np.array(qs)
-
-		# 	dubins_data = {
-		# 		'q0': A,
-		# 		'q1': B,
-		# 		'qs': qs
-		# 	}
-		# 	qs_array.append(dubins_data)
-
-
-		# 	# self.plot_dubins_path(dubins_path, A, B, show=True)
-
-		# 	# print("Plotting dubins path from A to B..")
-		# 	# self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1])
-
-		# 	# for pos_tuple in qs:
-		# 	# 	# loop each x,y,orientation tuple from dubins model..
-		# 	# 	self.p2p_drive_routine(pos_tuple)  # will do calc-turn-calc-drive as request-response
 
 
 		print("Shutting down Jackal..")
@@ -290,7 +195,8 @@ class SingleGoalNav():
 		print("Jackal's position in UTM: {}".format(curr_pose_utm))
 
 		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-		B = (goal_pos[0], goal_pos[1], goal_pos[2])
+		# B = (goal_pos[0], goal_pos[1], goal_pos[2])
+		B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
 		
 		turn_angle = self.initiate_angle_transform(A, B)
 
@@ -306,6 +212,21 @@ class SingleGoalNav():
 			print("Driving Jackal {} meters..".format(drive_distance))
 			self.call_jackal_pos_service(drive_distance)
 			print("Finished driving..")
+
+
+
+	def build_goals_from_dubins(self, dubins_path):
+		"""
+		Takes a dubins array (a numpy array), and builds a list
+		of list, where the latter items are easting, northing values (like nav_tracks.py)
+		"""
+		x_array = dubins_path[:,0]
+		y_array = dubins_path[:,1]
+		goals_array = []
+		for i in range(0, len(dubins_path)):
+			xy_pair = [x_array[i], y_array[i]]
+			goals_array.append(xy_pair)
+		return goals_array
 
 
 
@@ -335,7 +256,7 @@ class SingleGoalNav():
 		Returns: None
 		"""
 
-		print("QS Array: {}".format(qs))
+		# print("QS Array: {}".format(qs))
 
 		xs = qs[:,0]
 		ys = qs[:,1]

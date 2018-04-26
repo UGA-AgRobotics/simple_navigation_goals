@@ -48,8 +48,8 @@ def handle_rot_request(req):
 	# Turn Jackal to angle from req:
 	# Stop the robot before rotating
 	move_cmd = Twist()
-	cmd_vel.publish(move_cmd)
-	rospy.sleep(1.0)
+	# cmd_vel.publish(move_cmd)
+	# rospy.sleep(1.0)
 
 	goal_angle = req.turn_angle  # get angle, in degrees
 

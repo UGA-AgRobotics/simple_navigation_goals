@@ -110,63 +110,87 @@ class SingleGoalNav():
 		step_size = 0.5
 
 
-		############ TESTING A SINGLE A->B ################################
-		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
+		# Loop track goals here for each A->B in the course:
+		for i in range(0, len(_track) - 1):
 
-		print("Current position from pose server: {}".format(curr_pose))
+			current_goal = _track[i]
+			future_goal = None
 
-		_lat = curr_pose.jackal_fix.latitude
-		_lon = curr_pose.jackal_fix.longitude
+			try:
+				future_goal = _track[i + 1]
+			except IndexError as e:
+				print("Current goal is the last one in the course!")
+				print("End at the same orientation as the last goal..")
+				pass  # continue on..
 
-		print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
-
-		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-
-		transformed_angle = rotation
-		print("Initial angle from Jackal IMU: {}".format(transformed_angle))
-		transformed_angle = self.transform_imu_frame(degrees(transformed_angle))
-		print("Angle after IMU transform: {}".format(transformed_angle))  # i think this is the appropriate transformed angle
-
-		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
-		A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))  # initial position of jackal
-		B = (_track[0][0], _track[0][1], math.pi)  # use calculated orientation above
-
-		print("Jackal's current angle in degrees: {}".format(math.degrees(A[2])))
-
-		x_diff = B[0] - A[0]
-		y_diff = B[1] - A[1]
+			goal_orientation = self.determine_angle_at_goal(current_goal, future_goal)
+			print("Goal orientation when robot arrives at B: {}".format(math.degrees(goal_orientation)))
 
 
-		AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
-		AB_angle = self.transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
 
-		print("initial angle: {}".format(math.degrees(AB_theta0)))
-		print("AB angle: {}".format(AB_angle))
+			############ TESTING A SINGLE A->B ################################
 
-		qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
-		qs = np.array(qs)
+			curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
 
-		dubins_data = {
-			'q0': A,
-			'q1': B,
-			'qs': qs
-		}
-		qs_array.append(dubins_data)
+			print("Current position from pose server: {}".format(curr_pose))
 
-		print("Single dubins path data: {}".format(qs))
+			_lat = curr_pose.jackal_fix.latitude
+			_lon = curr_pose.jackal_fix.longitude
 
-		goals_array = self.build_goals_from_dubins(qs)  # NOTE: This includes the position the Jackal is currently, so skip first goal
+			print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
 
-		print("Jackal's current UTM position: {}".format(curr_pose_utm))
-		print("Goals array for Jackal to follow: {}".format(goals_array))
+			curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
 
-		# self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1])
+			transformed_angle = rotation
+			print("Initial angle from Jackal IMU: {}".format(transformed_angle))
+			transformed_angle = self.transform_imu_frame(degrees(transformed_angle))
+			print("Angle after IMU transform: {}".format(transformed_angle))  # i think this is the appropriate transformed angle
 
-		for goal in goals_array[1:]:
-			self.p2p_drive_routine(goal)  # will do calc-turn-calc-drive as request-response
+			# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)  # initial position of jackal
+			A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))  # initial position of jackal
+			# B = (_track[0][0], _track[0][1], math.pi)  # use calculated orientation above
+			# B = (_track[0][0], _track[0][1], goal_orientation)  # use calculated orientation above
+			B = (current_goal[0], current_goal[1], goal_orientation)
 
-		#############################################################################################
+			print("Jackal's current angle in degrees: {}".format(math.degrees(A[2])))
 
+			x_diff = B[0] - A[0]
+			y_diff = B[1] - A[1]
+
+
+			AB_theta0 = math.atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
+			AB_angle = self.transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
+
+			print("initial angle: {}".format(math.degrees(AB_theta0)))
+			print("AB angle: {}".format(AB_angle))
+
+			qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
+			qs = np.array(qs)
+
+			dubins_data = {
+				'q0': A,
+				'q1': B,
+				'qs': qs
+			}
+			qs_array.append(dubins_data)
+
+			print("Single dubins path data: {}".format(qs))
+
+			goals_array = self.build_goals_from_dubins(qs)  # NOTE: This includes the position the Jackal is currently, so skip first goal
+
+			print("Jackal's current UTM position: {}".format(curr_pose_utm))
+			print("Goals array for Jackal to follow: {}".format(goals_array))
+
+			self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1])
+
+			for goal in goals_array[1:]:
+				self.p2p_drive_routine(goal)  # will do calc-turn-calc-drive as request-response
+
+			#############################################################################################
+
+
+		# self.plot_full_dubins_path(qs_array, _np_track[:,0], _np_track[:,1])
+		
 
 		print("Shutting down Jackal..")
 		self.shutdown()
@@ -212,6 +236,23 @@ class SingleGoalNav():
 			print("Driving Jackal {} meters..".format(drive_distance))
 			self.call_jackal_pos_service(drive_distance)
 			print("Finished driving..")
+
+
+
+	def determine_angle_at_goal(self, goal, future_goal):
+		"""
+		Calculates the angle of orientation for the robot to be in when
+		it gets to its goal. Creates a vector that points to the future goal.
+		If there is no future goal, end in the same orientation, just end at 
+		the goal in the orientation it arrives in.
+		"""
+		if not future_goal:
+			return None
+
+		x_diff = future_goal[0] - goal[0]
+		y_diff = future_goal[1] - goal[1]
+
+		return math.atan2(y_diff, x_diff)  # returns full angle relative to easting,north -> x,y axis
 
 
 

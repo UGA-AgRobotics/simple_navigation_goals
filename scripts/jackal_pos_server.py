@@ -29,7 +29,8 @@ global_current_orientation = None
 tf_listener = tf.TransformListener()
 odom_frame = '/odom'
 base_frame = '/base_link'
-cmd_vel = rospy.Publisher('/cmd_vel', Twist)
+# cmd_vel = rospy.Publisher('/cmd_vel', Twist)
+cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 linear_speed = 0.3  # units of m/s
 # linear_speed = 1.0
 rate = 20  # 20Hz
@@ -139,6 +140,7 @@ def get_jackal_pos_server():
 	# print "get_jackal_pos_server subscribed to /navsat/fix from Jackal.."
 
 	rospy.Subscriber('/fix', NavSatFix, pos_callback)  # Subscribe to Jackal's /fix topic (reach units)
+	# rospy.Subscriber('/fix', NavSatFix, pos_callback, queue_size=1)  # Subscribe to Jackal's /fix topic (reach units)
 	print "get_jackal_pos_server subscribed to /fix from Jackal.."
 
 	print "Jackal pos server ready.."

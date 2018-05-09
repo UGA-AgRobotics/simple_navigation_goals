@@ -15,12 +15,12 @@ tf_listener = tf.TransformListener()
 odom_frame = '/odom'
 base_frame = '/base_link'
 
-cmd_vel = rospy.Publisher('/cmd_vel', Twist)
+# cmd_vel = rospy.Publisher('/cmd_vel', Twist)
+cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 # angular_speed = rospy.get_param("~angular_speed", 0.7)
 angular_speed = 0.5
 # angular_speed = 1.0
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
-# angular_tolerance = rospy.get_param("~angular_tolerance", radians(0.1)) # degrees to radians
 
 rate = 20  # 20Hz
 # r = rospy.Rate(rate)
@@ -146,7 +146,8 @@ def get_jackal_rot_server():
 	rospy.init_node('get_jackal_rot_server')
 	s = rospy.Service('get_jackal_rot', JackalRot, handle_rot_request)
 
-	rospy.Subscriber('/imu/data', Imu, rot_callback_imu)  # Subscribe to Jackal's /navsat/fix topic
+	rospy.Subscriber('/imu/data', Imu, rot_callback_imu)
+	# rospy.Subscriber('/imu/data', Imu, rot_callback_imu, queue_size=1)
 
 	print "get_jackal_rot_server subscribed to /imu/data from Jackal.."
 	print "Jackal rot server ready.."

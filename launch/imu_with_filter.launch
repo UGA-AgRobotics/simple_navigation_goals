@@ -24,12 +24,8 @@
     <param name="cc_t4" value="0.00000"/>
     <param name="cc_t5" value="0.00000"/>
 
-    <!-- <remap from="/imu/data_raw" to="/phidget_imu/data_raw" /> -->
-    <!-- <remap from="/imu/mag" to="/phidget_imu/mag" /> -->
-
-    <remap from="/imu/data_raw" to="/jackal/imu/data_raw" />
-    <remap from="/imu/mag" to="/jackal/imu/mag" />
-    <remap from="/imu/data" to="/jackal/imu/data" /> 
+    <remap from="/imu/data_raw" to="/phidget_imu/data_raw" />
+    <remap from="/imu/mag" to="/phidget_imu/mag" />
 
   </node>
 
@@ -46,6 +42,9 @@
   <node pkg="nodelet" type="nodelet" name="ImuFilterNodelet" 
     args="load imu_filter_madgwick/ImuFilterNodelet imu_manager" 
     output="screen"> 
+
+    <remap from="/phidget_imu/data_raw" to="/imu/data_raw" />
+    <remap from="/phidget_imu/mag" to="/imu/mag" />
 
     <param name="use_mag" value="true"/>
 

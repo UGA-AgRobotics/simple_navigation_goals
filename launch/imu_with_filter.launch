@@ -2,10 +2,6 @@
 
 <launch>
 
-  <remap from="/imu/data_raw" to="/jackal/imu/data_raw" />
-  <remap from="/imu/mag" to="/jackal/imu/mag" />
-  <remap from="/imu/data" to="/jackal/imu/data" /> 
-
   <node pkg="phidgets_imu" type="phidgets_imu_node" name="phidgets_imu_node" 
     output="screen">
 
@@ -30,6 +26,10 @@
 
     <!-- <remap from="/imu/data_raw" to="/phidget_imu/data_raw" /> -->
     <!-- <remap from="/imu/mag" to="/phidget_imu/mag" /> -->
+
+    <remap from="/imu/data_raw" to="/jackal/imu/data_raw" />
+    <remap from="/imu/mag" to="/jackal/imu/mag" />
+    <remap from="/imu/data" to="/jackal/imu/data" /> 
 
   </node>
 

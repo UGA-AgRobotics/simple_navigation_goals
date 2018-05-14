@@ -2,6 +2,10 @@
 
 <launch>
 
+  <remap from="/imu/data_raw" to="/jackal/imu/data_raw" />
+  <remap from="/imu/mag" to="/jackal/imu/mag" />
+  <remap from="/imu/data" to="/jackal/imu/data" /> 
+
   <node pkg="phidgets_imu" type="phidgets_imu_node" name="phidgets_imu_node" 
     output="screen">
 
@@ -24,8 +28,8 @@
     <param name="cc_t4" value="0.00000"/>
     <param name="cc_t5" value="0.00000"/>
 
-    <remap from="/imu/data_raw" to="/phidget_imu/data_raw" />
-    <remap from="/imu/mag" to="/phidget_imu/mag" />
+    <!-- <remap from="/imu/data_raw" to="/phidget_imu/data_raw" /> -->
+    <!-- <remap from="/imu/mag" to="/phidget_imu/mag" /> -->
 
   </node>
 
@@ -41,7 +45,7 @@
 
   <node pkg="nodelet" type="nodelet" name="ImuFilterNodelet" 
     args="load imu_filter_madgwick/ImuFilterNodelet imu_manager" 
-    output="screen">
+    output="screen"> 
 
     <param name="use_mag" value="true"/>
 

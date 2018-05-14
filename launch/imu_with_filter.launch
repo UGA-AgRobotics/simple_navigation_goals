@@ -23,6 +23,10 @@
     <param name="cc_t3" value="0.00000"/>
     <param name="cc_t4" value="0.00000"/>
     <param name="cc_t5" value="0.00000"/>
+
+    <remap from="/imu/data_raw" to="/phidget_imu/data_raw" />
+    <remap from="/imu/mag" to="/phidget_imu/mag" />
+
   </node>
 
   <!-- <node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter_gain_node" output="screen">

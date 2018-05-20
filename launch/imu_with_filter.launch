@@ -7,6 +7,7 @@
 
     <remap from="/imu/data_raw" to="/phidget_imu/data_raw" />
     <remap from="/imu/mag" to="/phidget_imu/mag" />
+    <remap from="/imu/is_calibrated" to="/phidget_imu/is_calibrated" />
 
     # supported data rates: 4 8 16 24 32 40 ... 1000 (in ms)
     <param name="period" value="4"/>
@@ -43,14 +44,14 @@
     args="load imu_filter_madgwick/ImuFilterNodelet imu_manager" 
     output="screen"> 
 
-    <remap from="/imu/data_raw" to="/phidget_imu/data_raw" />
-    <remap from="/imu/mag" to="/phidget_imu/mag" />
+    <!-- <remap from="/imu/data_raw" to="/phidget_imu/data_raw" /> -->
+    <!-- <remap from="/imu/mag" to="/phidget_imu/mag" /> -->
     <!-- <remap from="/phidget_imu/data_raw" to="/imu/data_raw" /> -->
     <!-- <remap from="/phidget_imu/mag" to="/imu/mag" /> -->
 
     <param name="use_mag" value="true"/>
 
-    <remap from="/imu/data" to="/phidgets_imu/data" />
+    <!-- <remap from="/imu/data" to="/phidgets_imu/data" /> -->
 
   </node>
 

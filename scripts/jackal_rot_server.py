@@ -147,7 +147,8 @@ def get_jackal_rot_server():
 	s = rospy.Service('get_jackal_rot', JackalRot, handle_rot_request)
 
 	# rospy.Subscriber('/imu/data', Imu, rot_callback_imu)
-	rospy.Subscriber('/imu/data', Imu, rot_callback_imu, queue_size=1)
+	# rospy.Subscriber('/imu/data', Imu, rot_callback_imu, queue_size=1)
+	rospy.Subscriber('/phidget/imu/data', Imu, rot_callback_imu, queue_size=1)
 
 	print "get_jackal_rot_server subscribed to /imu/data from Jackal.."
 	print "Jackal rot server ready.."

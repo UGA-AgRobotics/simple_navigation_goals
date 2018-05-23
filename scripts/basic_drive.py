@@ -112,11 +112,11 @@ class SingleGoalNav():
 		qs_array = []  # collection of points for dubins paths
 		turning_radius = 2.5  # min turning radius for robot in meters
 		step_size = 0.5  # dubins model step size in meters
-		look_ahead = 0.5  # look-ahead distance in meters
+		look_ahead = 2.0  # look-ahead distance in meters
 		######################################################################
 
 
-		# Sleep routine for testing:
+		# # # Sleep routine for testing:
 		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
 		# rospy.sleep(10)
 		# print("Initiating driving to point B..")
@@ -206,9 +206,8 @@ class SingleGoalNav():
 
 
 
-			# NOTE: current goal index = i, future goal = i + 1;
-			# If target_index > current goal index, start going to next goal..
-
+			# # NOTE: current goal index = i, future goal = i + 1;
+			# # If target_index > current goal index, start going to next goal..
 			# # Drive routine to follow the steps from A->B dubins, and checks for look-ahead to path goals (not dubins points)..
 			# for goal in goals_array[1:]:
 
@@ -386,7 +385,7 @@ class SingleGoalNav():
 		plt.plot(xs, ys, 'r.')
 		plt.plot(qs[0][0], qs[0][1], 'go', markersize=5)  # dubins start point
 		plt.plot(qs[-1][0], qs[-1][1], 'ro', markersize=5)  # dubins end point
-		
+
 		for i in xrange(qs.shape[0]):
 			plt.plot([xs[i], us[i]], [ys[i], vs[i]],'r-')
 

@@ -17,7 +17,11 @@ import sys
 
 
 
-class DataMassager(object):
+class GoalFileHandler(object):
+	"""
+	Handles goal/position data using the keys laid out below.
+	See UGA-AgRobotics/RoverWatch/goals for examples of goal files.
+	"""
 
 	def __init__(self):
 
@@ -193,22 +197,21 @@ if __name__ == '__main__':
 	filename = sys.argv[1]  # get filename from command line
 	filename_out = "{}_updated.json".format(filename.split('.')[0])
 
-	datmass = DataMassager()
+	goal_file_handler = GoalFileHandler()
 
 	print("Reading in goals file: {}".format(filename))
 
-	datmass.read_goals_file(filename)
+	goal_file_handler.read_goals_file(filename)
 
 	print("Goals file read.")
 	print("Filling out goals file with missing formats..")
 
-	updated_goals = datmass.fill_out_goals_file()
-	datmass.goals['goals'] = updated_goals
+	updated_goals = goal_file_handler.fill_out_goals_file()
+	goal_file_handler.goals['goals'] = updated_goals
 
 	print("Goals file now updated.")
 	print("Saving updated goals file as: {}..".format(filename_out))
 
-	# datmass.save_goals_file(filename_out, updated_goals)
-	datmass.save_goals_file(filename_out, datmass.goals)
+	goal_file_handler.save_goals_file(filename_out, goal_file_handler.goals)
 
 	print("Done.")

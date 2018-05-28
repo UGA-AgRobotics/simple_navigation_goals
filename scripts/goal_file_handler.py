@@ -108,7 +108,8 @@ class GoalFileHandler(object):
 		Inputs: lat/lon are single decimal numbers.
 		Returns: [lat,lon], where lat/lon = [deg, min, sec]
 		"""
-		new_pos = self.dmsPos
+		# new_pos = self.dmsPos
+		new_pos = {}
 		for key, val in dec_pos.items():
 			new_pos[key] = {
 				'deg': int(val),
@@ -187,14 +188,63 @@ class GoalFileHandler(object):
 
 
 
+	def parse_bag_data_to_goals(self):
+		"""
+		Takes /fix data from bag file handler (e.g., {"topic": "/fix", "data": [{"lat": "", "lon": ""}]}),
+		and parses it to the goal JSON format.
+		"""
+		bag_data_list = self.goals
+		parsed_results = {'goals': [], 'units': "dec"}  # assuming /fix topic is dec lat/lon..
+		
+		if len(bag_data_list) == 1:
+			# assuming /fix data is all that's in bag data if length is 1..
+			bag_data_list = self.goals[0].get('data')  # get list of {'lat': "", 'lon': ""} objects
+		else:
+			raise "More than one topic in bag data.. TODO: loop to find desired topic instead of raising exception.."
+
+		_index = 1
+		for _pos in bag_data_list:
+			parsed_data_obj = {
+				'index': _index,
+				'decPos': {
+					'lat': _pos.get('lat'),
+					'lon': _pos.get('lon')
+				}
+			}
+			parsed_results['goals'].append(parsed_data_obj)
+			_index += 1
+
+		self.goals = parsed_results  # set goals to parsed results
 
 
 
 
 if __name__ == '__main__':
+	"""
+	Fills out goals JSON to have all formats of position (UTM, lat/lon deg and dsm).
 
-	# Testing procedure follows:
-	filename = sys.argv[1]  # get filename from command line
+	Inputs: 
+		1. filename - name of initial goals file.
+		2. is_bag_file - whether it's position data from a bag file or not (bag_handler.py)
+
+	Output: A parsed JSON file named filename_updated.json
+	"""
+
+	filename = None
+	is_bag_file = False
+
+	try:
+		filename = sys.argv[1]  # get filename from command line
+	except IndexError as e:
+		raise "Must add an input filename for goals file!"
+
+	try:
+		is_bag_file = sys.argv[2]
+		if is_bag_file in ["true", "True", True]:
+			is_bag_file = True
+	except IndexError as e:
+		print "Didn't provide bool for data being from bag file or not, assuming it's not from bag_handler.py.."
+
 	filename_out = "{}_updated.json".format(filename.split('.')[0])
 
 	goal_file_handler = GoalFileHandler()
@@ -205,6 +255,10 @@ if __name__ == '__main__':
 
 	print("Goals file read.")
 	print("Filling out goals file with missing formats..")
+
+	if is_bag_file:
+		# Parses bag_handler data to goals file format before filling out position data..
+		goal_file_handler.parse_bag_data_to_goals()
 
 	updated_goals = goal_file_handler.fill_out_goals_file()
 	goal_file_handler.goals['goals'] = updated_goals

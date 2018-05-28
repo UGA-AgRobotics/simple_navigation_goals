@@ -34,39 +34,31 @@ class BagHandler:
 		self.data_from_bag = {}  # the parsed/massaged data from bagfile that'll be used as a course/navigation file for the Rover
 
 
-	# def record_bagfile(self):
-	# 	_bag = rosbag.Bag('test.bag', 'w')
-	# 	try:
-	# 		str = String()
-	# 		str.data = 'foo'
-	# 		i = Int32()
-	# 		i.data = 42
-	# 		_bag.write('chatter', str)
-	# 		_bag.write('numbers', i)
-	# 	finally:
-	# 		_bag.close()
-
-
 	def get_data_from_bag(self):
 		"""
 		Loops through bag data grabbing specific keys and values..
 		"""
-		_bag = rosbag.Bag(self.filename)
-		_bag_results = {}
+		_bag = rosbag.Bag(self.filename)  # get bag file object
+		# _bag_results = {}  # parsed bag results
+		_bag_results_list = []  # list of bag results
 
-		# Creates keys using the topic names for _bag_results:
 		for topic in self.topics:
-			_bag_results[topic] = []
+			_topic_results = {
+				'topic': topic,
+				'data': []
+			}
+			_bag_results_list.append(_topic_results)
+
 
 		for topic, msg, t in _bag.read_messages(topics=self.topics):
 
 			if topic == self.imu_topic:
 				_data_obj = self.handle_imu_data(msg)
-				_bag_results[topic].append(_data_obj)
 
 			elif topic == self.reach_topic:
 				_data_obj = self.handle_reach_data(msg)
-				_bag_results[topic].append(_data_obj)
+
+			_bag_results_list = self.add_topic_data_to_results(topic, _bag_results_list, _data_obj)
 
 		_bag.close()
 
@@ -74,8 +66,8 @@ class BagHandler:
 		print "Data from {} topics has been successfully retrieved from bagfile {}".format(self.topics, self.filename)
 		print "Data can now be accessed by the 'data_from_bag' attribute.."
 
-		self.data_from_bag = _bag_results
-		return _bag_results
+		self.data_from_bag = _bag_results_list
+		return _bag_results_list
 
 
 	def save_data_from_bag(self, output_filename):
@@ -120,6 +112,17 @@ class BagHandler:
 		return rot.GetRPY()[2]
 
 
+	def add_topic_data_to_results(self, topic, bag_results_list, data_obj):
+		"""
+		Loops through parsed bag results and adds data to
+		the appropriate topic.
+		"""
+		for bag_result_obj in bag_results_list:
+			if bag_result_obj.get('topic') == topic:
+				bag_result_obj.get('data', []).append(data_obj)  # add data to topic in results list
+		return bag_results_list
+
+
 
 
 
@@ -133,9 +136,22 @@ if __name__ == '__main__':
 	e.g., python record_course.py rosbagfile1.bag /fix /imu/data <- record /fix
 	and /imu/data topics into a file called rosbagfile1.bag
 	"""
-	bagfilename = 'sample_course_1.bag'
-	output_filename = 'course_1.json'
-	topic_list = ['/fix']
+	# bagfilename = 'sample_course_1.bag'
+	# output_filename = 'course_1.json'
+	# topic_list = ['/fix']
+
+	bagfilename = None
+	output_filename = None
+	topic_list = []
+
+	try:
+		bagfilename = sys.argv[1]
+		output_filename = sys.argv[2]
+
+		for topic in sys.argv[3:]:
+			topic_list.append(topic)  # NOTE: assuming rest of args are topics
+	except IndexError:
+		raise "Must have the following args: bagfilename, output filename, and topics"
 	
 	# Testing routine:
 	print "Getting {} topics data from {} bagfile".format(topic_list, bagfilename)
@@ -143,16 +159,3 @@ if __name__ == '__main__':
 	bagobj.get_data_from_bag()
 	bagobj.save_data_from_bag(output_filename)
 	print "Data saved as: {}".format(output_filename)
-
-
-	# Code block for running bag recording class:
-	# try:
-	# 	# SingleGoalNav()
-	# 	filename = sys.argv[1]
-	# 	topics = []
-	# 	for topic in sys.argv[2:]:
-	# 		topics.append(topic)  # assuming remaining args are topics
-	# 	# TODO: Finish routine..
-	# except rospy.ROSInterruptException:
-	# 	rospy.loginfo("Navigation terminated.")
-

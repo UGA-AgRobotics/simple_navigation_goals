@@ -1,6 +1,0 @@
-<launch>
-
-    <include file="$(find phidgets_imu)/launch/imu.launch" ns="phidget" />
-    <!-- <include file="$(find simple_navigation_goals)/launch/imu_single_nodes.launch" ns="phidget" /> -->
-
-</launch>

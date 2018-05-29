@@ -41,3 +41,25 @@ class NavTracks(object):
 		for key,val in self.__dict__.items():
 			if key == track:
 				return val
+
+
+	def get_track_from_course(self, course):
+		"""
+		Takes position file in format of goals, and grabs the
+		UTM positions to build a list of UTM x,y positions (e.g., 
+		the hard-coded tracks in the __init__ function)
+		"""
+
+		goals = course.get('goals')  # get list of goals
+		track_list = []  # track list from course positions
+
+		if len(goals) <= 0:
+			raise "Could not find goals in course object, make_track_from_course function, nav_tracks module.."
+
+		for goal in goals:
+			_easting = goal.get('utmPos', {}).get('easting')
+			_northing = goal.get('utmPos', {}).get('northing') 
+			track_list.append([_easting, _northing])  # building list of [easting, northing] objects
+
+		return track_list
+

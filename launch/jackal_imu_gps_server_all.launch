@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+	
+	<!-- Launch file for rosbridge server -->
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+	<!-- Node to read data from reach via serial -->
+	<node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="reach_nmea_driver" respawn="false">
+		<!-- <param name="port" value="/dev/ttyACM1"/> -->
+		<param name="port" value="$(optenv REACH_PORT /dev/ttyACM1)" />
+		<!-- <param name="baud" value="9600"/> -->
+		<param name="baud" value="$(optenv REACH_BAUD 9600)" />
+	</node>
+
+	<!-- Launch IMU launch file -->
+	<include file="$(find simple_navigation_goals)/launch/imu.launch" ns="phidget" />
+
+</launch>

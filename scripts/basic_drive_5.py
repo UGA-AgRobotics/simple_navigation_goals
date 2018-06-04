@@ -17,8 +17,8 @@ import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
 from simple_navigation_goals.srv import *
 import tf
-# from transform_utils import quat_to_angle, normalize_angle
 import math
+import json
 from math import radians, copysign, sqrt, pow, pi, degrees
 import utm
 import PyKDL
@@ -26,7 +26,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dubins
 
+# Local package requirements:
 from nav_tracks import NavTracks
+import jackal_nav_controller  # handles drive and turn routines
 
 
 
@@ -37,7 +39,7 @@ class SingleGoalNav():
 	location, both converted to UTM.
 	"""
 
-	def __init__(self):
+	def __init__(self, course=None):
 		# Give the node a name
 		rospy.init_node('single_goal_nav', anonymous=False)
 		
@@ -100,9 +102,21 @@ class SingleGoalNav():
 		(position, rotation) = self.get_odom()  # get starting position values
 
 
-		# Gets track to follow:
-		_track = NavTracks().get_track('track4')  # just one initial goal point for initial dubins testing..
+
+		###################################################################
+		# Gets track to follow:											  #
+		###################################################################
+		nt = NavTracks()
+
+		if not course:
+			raise Exception("Must specify course")
+
+		# _track = nt.get_track('track4')  # just one initial goal point for initial dubins testing..
+		_track = nt.get_track_from_course(course)  # builds track from a GPS course/path
 		_np_track = np.array(_track)
+
+		print("The Course: {}".format(_track))
+		###################################################################
 
 
 
@@ -111,15 +125,15 @@ class SingleGoalNav():
 		# qs_array = []  # collection of points for dubins paths
 		# turning_radius = 2.5  # min turning radius for robot in meters
 		# step_size = 0.5  # dubins model step size in meters
-		look_ahead = 0.5  # look-ahead distance in meters
+		self.look_ahead = 1.0  # look-ahead distance in meters
 		######################################################################
 
 
 
-		# # # Sleep routine for testing:
-		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		# rospy.sleep(10)
-		# print("Initiating driving to point B..")
+		# # Sleep routine for testing:
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(10)
+		print("Initiating driving to point B..")
 
 
 
@@ -127,46 +141,31 @@ class SingleGoalNav():
 		curr_pose_utm = self.get_current_position()
 
 		# Accounting for look-ahead distance:
-		target_index = self.calc_target_index(curr_pose_utm, 0, _np_track[:,0], _np_track[:,1], look_ahead)
-		print("Target goal index: {}".format(target_index))
+		target_index = self.calc_target_index(curr_pose_utm, 0, _np_track[:,0], _np_track[:,1])
+		print("Initial target goal index: {}".format(target_index))
 
 
 		# Loop track goals here for each A->B in the course:
 		for i in range(target_index, len(_track) - 1):
 
+			print ("i: {}".format(i))
 			current_goal = _track[i]
-			future_goal = None
 
+			future_goal = None
 			try:
 				future_goal = _track[i + 1]
 			except IndexError as e:
 				print("Current goal is the last one in the course!")
 				print("End at the same orientation as the last goal..")
 				pass  # continue on..
-
 			goal_orientation = self.determine_angle_at_goal(current_goal, future_goal)
-			print("Goal orientation when robot arrives at B: {}".format(math.degrees(goal_orientation)))
 
+			curr_pose_utm = self.get_current_position()
 
-
-			curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
-
-			_lat = curr_pose.jackal_fix.latitude
-			_lon = curr_pose.jackal_fix.longitude
-
-			print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
-
-			curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-
-			transformed_angle = rotation
-			# print("Initial angle from Jackal IMU: {}".format(degrees(transformed_angle)))
-			transformed_angle = self.transform_imu_frame(degrees(transformed_angle))
-			# print("Angle after IMU transform: {}".format(transformed_angle))  # i think this is the appropriate transformed angle
+			transformed_angle = self.transform_imu_frame(degrees(rotation))
 
 			A = (curr_pose_utm[0], curr_pose_utm[1], math.radians(transformed_angle))  # initial position of jackal
 			B = (current_goal[0], current_goal[1], goal_orientation)
-
-			print("Jackal's current angle in degrees: {}".format(math.degrees(A[2])))
 
 			x_diff = B[0] - A[0]
 			y_diff = B[1] - A[1]
@@ -175,35 +174,12 @@ class SingleGoalNav():
 			AB_angle = self.transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
 
 
+			drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
 
-
-			#############################################################################
-			# DUBINS MODEL STUFF
-			#############################################################################
-			# qs,_ = dubins.path_sample(A, B, turning_radius, step_size)
-			# qs = np.array(qs)
-			# dubins_data = {
-			# 	'q0': A,
-			# 	'q1': B,
-			# 	'qs': qs
-			# }
-			# qs_array.append(dubins_data)
-			# goals_array = self.build_goals_from_dubins(qs)  # NOTE: This includes the position the Jackal is currently, so skip first goal
-			# print("Jackal's current UTM position: {}".format(curr_pose_utm))
-			# print("Goals array for Jackal to follow: {}".format(goals_array))
-			# print("Number of points to Goal: {}".format(len(goals_array)))
-			# # self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1], show=False, filename="dubinsAB_{}".format(i))  # saves plotsas model runs
-			# self.plot_full_dubins_path([dubins_data], _np_track[:,0], _np_track[:,1])  # shows plot mid model (blocks model for each plot)
-			#############################################################################
-
-
-
-
-			# # Pause routine for testing (walking b/w lab and field)
-			# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-			# rospy.sleep(10)
-			# print("Initiating driving to point B..")
-
+			# Skips to next goal/course point if said goal is less than look-ahead:
+			if drive_distance < self.look_ahead:
+				print("Within look-ahead of goal, so skipping to next goal")
+				continue  # skip to next iteration in track for loop
 
 
 
@@ -211,42 +187,17 @@ class SingleGoalNav():
 			self.p2p_drive_routine(current_goal)
 
 			curr_pose_utm = self.get_current_position()
-			print("Jackal's current position in UTM: {}".format(curr_pose_utm))
 
-			print("Finished driving, now determining target index..")
-			new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1], look_ahead)
+			new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1])
+
+			print("Target index: {}".format(new_target_index))
 
 			if new_target_index > target_index:
 				print(">>> Jackal is within look-ahead distance of goal, starting to drive toward next goal now..")
 				target_index = new_target_index
-				break  # break out of drive loop and start driving toward next goal in track!
-
-
-
-
-			##############################################################################
-			# THIS IS THE DRIVE ROUTINE FOR basic_drive_4.py, WHICH LOOPS DUBINS POINTS: #
-			##############################################################################
-			# # NOTE: current goal index = i, future goal = i + 1;
-			# # If target_index > current goal index, start going to next goal..
-			# # Drive routine to follow the steps from A->B dubins, and checks for look-ahead to path goals (not dubins points)..
-			# for goal in goals_array[1:]:
-
-			# 	print("Executing drive routine..")
-			# 	self.p2p_drive_routine(goal)
-
-			# 	curr_pose_utm = self.get_current_position()
-			# 	print("Jackal's current position in UTM: {}".format(curr_pose_utm))
-
-			# 	print("Finished driving, now determining target index..")
-			# 	new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1], look_ahead)
-
-			# 	if new_target_index > target_index:
-			# 		print(">>> Jackal is within look-ahead distance of goal, starting to drive toward next goal now..")
-			# 		target_index = new_target_index
-			# 		break  # break out of drive loop and start driving toward next goal in track!
-			##############################################################################
-
+				i = target_index
+				print ("new i: {}".format(i))
+				continue
 
 
 
@@ -274,19 +225,21 @@ class SingleGoalNav():
 		if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			self.call_jackal_rot_service(turn_angle)
+			# self.call_jackal_rot_service(turn_angle)
+			jackal_nav_controller.execute_turn(radians(turn_angle))
 			print("Finished turning..")
 
 		drive_distance = self.determine_drive_distance(A, B)
 
 		if drive_distance > 0:
 			print("Driving Jackal {} meters..".format(drive_distance))
-			self.call_jackal_pos_service(drive_distance)
+			# self.get_jackal_pos_from_service(drive_distance)
+			jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
 			print("Finished driving..")
 
 
 
-	def calc_target_index(self, current_position, current_goal_index, cx, cy, look_ahead):
+	def calc_target_index(self, current_position, current_goal_index, cx, cy):
 		"""
 		From red_rover_model pure_puruit module. Loops through course
 		points (x and y) and builds a list of the diff b/w robot's position and
@@ -297,42 +250,21 @@ class SingleGoalNav():
 
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
-		print("Determining goal point based on look-ahead of {}".format(look_ahead))
+		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
 
 		ind = 0
 		for pos_diff in d:
-			print("Distance between Jackal and goal: index={}, value=({}, {}), distance={} meters".format(ind, cx[ind], cy[ind], d[ind]))
-			if pos_diff > look_ahead:
+			# print("Distance between Jackal and goal: index={}, value=({}, {}), distance={} meters".format(ind, cx[ind], cy[ind], d[ind]))
+			print("Distance between Jackal and goal: index={}, value=({}, {}), distance={} meters".format(ind, cx[ind], cy[ind], pos_diff))
+			if pos_diff > self.look_ahead:
 				return d.index(pos_diff)  # return index of goal to go to
 			ind += 1
 
 
-		# L = 0.0
-		# while look_ahead > L and (ind + 1) < len(cx):
-		# 	dx = cx[ind + 1] - cx[ind]
-		# 	dy = cy[ind + 1] - cy[ind]
-		# 	L += math.sqrt(dx ** 2 + dy ** 2)
-		# 	print("Distance b/w points: {}".format(L))
-		# 	ind += 1
-
-		# print("Target index: {}".format(ind))
-		# print("Target goal after look-ahead: {}, {}".format(cx[ind], cy[ind]))
-
-		# return ind
-
-
 
 	def get_current_position(self):
-
-		curr_pose = self.call_jackal_pos_service(0)  # don't drive, just get current lat/lon
-
-		_lat = curr_pose.jackal_fix.latitude
-		_lon = curr_pose.jackal_fix.longitude
-
-		print("Jackal's current lat, lon: {}, {}".format(_lat, _lon))
-
+		curr_pose = self.get_jackal_pos_from_service()  # don't drive, just get current lat/lon
 		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-
 		return curr_pose_utm
 
 
@@ -466,22 +398,7 @@ class SingleGoalNav():
 			# No change in angle..
 			return 0.0
 		else:
-			raise "!Error occurred in basic_drive_3/transform_angle_by_quadrant func.."
-
-
-
-	def get_angle_between_vectors(self, A, B):
-		"""
-		Uses the dot product to determine the angle
-		between points A and B.
-
-		cos(theta) = (A dot B) / (||A|| + ||B||)
-		"""
-		dot_prod = A[0]*B[0] + A[1]*B[1]
-		len_A = math.sqrt(A[0]**2 + A[1]**2)
-		len_B = math.sqrt(B[0]**2 + B[1]**2)
-
-		return math.acos(dot_prod / (len_A + len_B))
+			raise Exception("!Error occurred in basic_drive_3/transform_angle_by_quadrant func..")
 
 
 
@@ -496,20 +413,6 @@ class SingleGoalNav():
 			_trans = 360 + _trans  # transform angle to 0->360 if in -180->0 quadrants
 
 		return _trans
-
-
-	def determine_turn_angle(self, A, B):
-		curr_angle = degrees(A[2])
-		ab_angle = degrees(math.atan2((B[1] - A[1]), (B[0] - A[0])))  # determine angle between A and B in world/UTM frame
-
-		print("Current angle of robot: {}".format(curr_angle))
-		print("Angle between A and B: {}".format(ab_angle))
-
-		if curr_angle > 0:
-			return 180 - (curr_angle - ab_angle)
-
-		if curr_angle < 0:
-			return -180 - (curr_angle - ab_angle)
 
 
 	def determine_drive_distance(self, A, B):
@@ -544,40 +447,39 @@ class SingleGoalNav():
 		rospy.sleep(1)
 
 
-	def convert_to_utm(self, lat, lon):
-		"""
-		Convert lat/lon to utm.
-		"""
-		try:
-			return utm.from_latlon(lat, lon)
-		except e as Exception:
-			print("Error converting lat/lon to utm: {}".format(e))
-			return None
-
-
-	def call_jackal_pos_service(self, distance):
+	def get_jackal_pos_from_service(self):
 		"""
 		Get current GPS fix from Jackal's position
 		"""
 		rospy.wait_for_service('get_jackal_pos')
 		get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-		return get_jackal_pos(distance)
+		return get_jackal_pos()
 
 
-	def call_jackal_rot_service(self, angle):
-		"""
-		Get current IMU position and orientation from Jackal.
-		Inputs:
-			angle - angle to turn in radians
-		"""
-		rospy.wait_for_service('get_jackal_rot')
-		get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		return get_jackal_rot(angle)
+	# def call_jackal_rot_service(self, angle):
+	# 	"""
+	# 	Get current IMU position and orientation from Jackal.
+	# 	Inputs:
+	# 		angle - angle to turn in radians
+	# 	"""
+	# 	rospy.wait_for_service('get_jackal_rot')
+	# 	get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+	# 	return get_jackal_rot(angle)
 
 
 
 if __name__ == '__main__':
+
 	try:
-		SingleGoalNav()
+		course_filename = sys.argv[1]
+	except IndexError:
+		raise IndexError("Course not specified. Add course filename as arg when running basic_drive_5.py")
+
+	coursefile = open(course_filename, 'r')
+	course = json.loads(coursefile.read())
+
+	try:
+		SingleGoalNav(course)
+		# SingleGoalNav()
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")

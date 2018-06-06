@@ -225,13 +225,13 @@ if __name__ == '__main__':
 
 	Inputs: 
 		1. filename - name of initial goals file.
-		2. is_bag_file - whether it's position data from a bag file or not (bag_handler.py)
+		2. from_bag_file - whether it's position data from a bag file or not (bag_handler.py)
 
 	Output: A parsed JSON file named filename_updated.json
 	"""
 
 	filename = None
-	is_bag_file = False
+	from_bag_file = False
 
 	try:
 		filename = sys.argv[1]  # get filename from command line
@@ -239,9 +239,9 @@ if __name__ == '__main__':
 		raise "Must add an input filename for goals file!"
 
 	try:
-		is_bag_file = sys.argv[2]
-		if is_bag_file in ["true", "True", True]:
-			is_bag_file = True
+		from_bag_file = sys.argv[2]
+		if from_bag_file in ["true", "True", True]:
+			from_bag_file = True
 	except IndexError as e:
 		print "Didn't provide bool for data being from bag file or not, assuming it's not from bag_handler.py.."
 
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 	print("Goals file read.")
 	print("Filling out goals file with missing formats..")
 
-	if is_bag_file:
+	if from_bag_file:
 		# Parses bag_handler data to goals file format before filling out position data..
 		goal_file_handler.parse_bag_data_to_goals()
 

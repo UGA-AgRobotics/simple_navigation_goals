@@ -20,6 +20,9 @@ class EmlidSocketIOClient:
 		self.arduino_path = '/dev/ttyACM0'
 		self.arduino_baud = 9600
 
+		print("Reach IP: {}, Reach Port: {}".format(self.reach_ip, self.reach_port))
+		print("Arduino serial path: {}, Arduino baud: {}".format(self.arduino_path, self.arduino_baud))
+
 		self.reach_keys = [
 			'solution status',
 			'baseline length float (m)',
@@ -111,8 +114,5 @@ if __name__ == '__main__':
 	except IndexError:
 		print("No inputs provided for reach ip or reach port, so using defaults..")
 		pass
-
-	print("Reach IP: {}, Reach Port: {}".format(emlidsock.reach_ip, emlidsock.reach_port))
-	print("Arduino serial path: {}, Arduino baud: {}".format(emlidsock.arduino_path, emlidsock.arduino_baud))
 
 	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)

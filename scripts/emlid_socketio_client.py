@@ -68,6 +68,8 @@ class EmlidSocketIOClient:
 
 
 	def on_status_broadcast(self, msg):
+
+		if not msg: return
 		
 		solution_status = msg.get('solution status')
 

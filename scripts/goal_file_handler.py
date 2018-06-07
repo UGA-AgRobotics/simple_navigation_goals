@@ -14,6 +14,7 @@ the goals file.
 import utm
 import json
 import sys
+import bag_handler
 
 
 
@@ -257,8 +258,12 @@ if __name__ == '__main__':
 	print("Filling out goals file with missing formats..")
 
 	if from_bag_file:
-		# Parses bag_handler data to goals file format before filling out position data..
-		goal_file_handler.parse_bag_data_to_goals()
+		print("Assuming GPS topic is /fix in bag file..")
+		output_filename = "{}_filled.json".format(filename)
+		bag_handler.main(filename, output_filename, "/fix")  # NOTE: will save output file to path as output_filename..
+		print("Filled out GPS data file created: {}".format(output_filename))
+		goal_file_handler.read_goals_file(output_filename)  # sets updated/filled data file as goals file..
+		goal_file_handler.parse_bag_data_to_goals()  # parses bag_handler data to goals file format before filling out position data..
 
 	updated_goals = goal_file_handler.fill_out_goals_file()
 	goal_file_handler.goals['goals'] = updated_goals

@@ -131,6 +131,20 @@ class BagHandler:
 		into a .json file that's formatted for the Rover Watch app to plot.
 		Sources: UGA-AgRobotics/RoverWatch, and simple_navgiation_goals's goal_file_handler.py
 		"""
+
+
+
+
+
+
+
+def main(bagfilename, output_filename, topic_list):
+
+	print("Getting {} topics data from {} bagfile".format(topic_list, bagfilename))
+	bagobj = BagHandler(bagfilename, topic_list)
+	bagobj.get_data_from_bag()
+	bagobj.save_data_from_bag(output_filename)
+	print("Data saved as: {}".format(output_filename))
 		
 
 
@@ -165,11 +179,6 @@ if __name__ == '__main__':
 		for topic in sys.argv[3:]:
 			topic_list.append(topic)  # NOTE: assuming rest of args are topics
 	except IndexError:
-		raise "Must have the following args: bagfilename, output filename, and topics"
+		raise IndexError("Must have the following args: bagfilename, output filename, and topics")
 	
-	# Testing routine:
-	print "Getting {} topics data from {} bagfile".format(topic_list, bagfilename)
-	bagobj = BagHandler(bagfilename, topic_list)
-	bagobj.get_data_from_bag()
-	bagobj.save_data_from_bag(output_filename)
-	print "Data saved as: {}".format(output_filename)
+	main(bagfilename, output_filename, topic_list)  # Runs main bag_handler routine!

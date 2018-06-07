@@ -30,7 +30,7 @@ class EmlidSocketIOClient:
 		self.status_options = ['fix', 'float', 'single', '-']
 
 		self.arduino = serial.Serial(self.arduino_path, self.arduino_baud, timeout=0.1)  # initiate conn to arduino via serial
-		time.sleep(1)  # waiting to ensure connection to arduino before writing to it..
+		time.sleep(2)  # waiting to ensure connection to arduino before writing to it..
 
 		self.connect_to_socketio_server()  # initiate conn to emlid's socketio server
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 		print("No inputs provided for reach ip or reach port, so using defaults..")
 		pass
 
-	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)
-
 	print("Reach IP: {}, Reach Port: {}".format(emlidsock.reach_ip, emlidsock.reach_port))
 	print("Arduino serial path: {}, Arduino baud: {}".format(emlidsock.arduino_path, emlidsock.arduino_baud))
+
+	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)

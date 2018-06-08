@@ -46,12 +46,12 @@ class SingleGoalNav():
 
 		self.step_size = 0.5  # step size to break up A->B distances (in meters)
 		
-		# Set the parameters for the target square
-		goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
-		goal_angle = rospy.get_param("~goal_angle", radians(90))    # degrees converted to radians
-		linear_speed = rospy.get_param("~linear_speed", 0.2)        # meters per second
-		angular_speed = rospy.get_param("~angular_speed", 0.7)      # radians per second
-		angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
+		# # Set the parameters for the target square
+		# goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
+		# goal_angle = rospy.get_param("~goal_angle", radians(90))    # degrees converted to radians
+		# linear_speed = rospy.get_param("~linear_speed", 0.2)        # meters per second
+		# angular_speed = rospy.get_param("~angular_speed", 0.7)      # radians per second
+		# angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 		
 		# Publisher to control the robot's speed
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist)
@@ -82,7 +82,7 @@ class SingleGoalNav():
 		position = Point()  # initialize the position variable as a Point type
 		move_cmd = Twist()  # initialize movement comment
 
-		move_cmd.linear.x = linear_speed  # set movement command to forward motion
+		# move_cmd.linear.x = linear_speed  # set movement command to forward motion
 
 		(position, rotation) = self.get_odom()  # get starting position values
 

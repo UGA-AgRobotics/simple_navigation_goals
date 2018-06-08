@@ -1,7 +1,12 @@
 <?xml version="1.0"?>
 <launch>
+
+	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
+	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen">
+		
+	</node> 
 	
-	<!-- Launch file for rosbridge server -->
+	<!-- Launches file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
 	<!-- Node to read data from reach via serial -->
@@ -12,7 +17,7 @@
 		<param name="baud" value="$(optenv REACH_BAUD 9600)" />
 	</node>
 
-	<!-- Launch IMU launch file -->
+	<!-- Launches IMU launch file -->
 	<include file="$(find simple_navigation_goals)/launch/imu.launch" ns="phidget" />
 
 </launch>

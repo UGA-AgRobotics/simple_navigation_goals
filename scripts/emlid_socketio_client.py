@@ -8,7 +8,7 @@ import sys
 
 class EmlidSocketIOClient:
 
-	def __init__(self, reach_ip=None, reach_port=None):
+	def __init__(self, reach_ip=None, reach_port=None, arduino_path=None, arduino_baud=None):
 
 		# To set DEBUG for more verbose messages for troubleshooting, 
 		# uncomment below logging lines:
@@ -17,8 +17,8 @@ class EmlidSocketIOClient:
 
 		self.reach_ip = reach_ip or '192.168.131.200'
 		self.reach_port = reach_port or 80
-		self.arduino_path = '/dev/ttyACM0'
-		self.arduino_baud = 9600
+		self.arduino_path = arduino_path or '/dev/ttyACM0'
+		self.arduino_baud = arduino_baud or 9600
 
 		print("Reach IP: {}, Reach Port: {}".format(self.reach_ip, self.reach_port))
 		print("Arduino serial path: {}, Arduino baud: {}".format(self.arduino_path, self.arduino_baud))
@@ -109,12 +109,16 @@ if __name__ == '__main__':
 
 	_reach_ip = None
 	_reach_port = None
+	_arduino_path = None
+	_arduino_baud = None
 
 	try:
 		_reach_ip = sys.argv[1]
 		_reach_port = sys.argv[2]
+		_arduino_path = sys.argv[3]
+		_arduino_baud = sys.argv[4]
 	except IndexError:
 		print("No inputs provided for reach ip or reach port, so using defaults..")
 		pass
 
-	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)
+	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port, _arduino_path, _arduino_baud)

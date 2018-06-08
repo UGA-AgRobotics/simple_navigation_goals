@@ -15,9 +15,9 @@ tf_listener = tf.TransformListener()
 odom_frame = '/odom'
 base_frame = '/base_link'
 cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
-linear_speed = 0.2  # units of m/s
+linear_speed = 0.4  # units of m/s
 rate = 20  # Hz
-angular_speed = 0.5
+angular_speed = 0.4
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 
@@ -48,38 +48,6 @@ def drive_forward(goal_distance, look_ahead):
 						pow((position.y - y_start), 2))
 
 	return True
-
-
-
-# def handle_rot_request(req):
-
-# 	print "Handling request to get Jackal's current orientation.."
-# 	print "Incoming request to be handled: {}".format(req)
-
-# 	global global_current_orientation
-
-# 	# Turn Jackal to angle from req:
-# 	# Stop the robot before rotating
-# 	move_cmd = Twist()
-
-# 	goal_angle = req.turn_angle  # get angle, in degrees
-
-# 	if goal_angle > 0:
-# 		move_cmd.angular.z = angular_speed
-
-# 	if goal_angle < 0:
-# 		move_cmd.angular.z = -angular_speed
-	
-# 	(position, rotation) = get_odom()
-# 	goal_angle = radians(req.turn_angle)  # get requested angle to turn from client
-
-# 	print "Current Jackal orientation: {}".format(degrees(rotation))
-# 	print "Goal angle: {}".format(degrees(goal_angle))
-
-# 	execute_turn(position, rotation, goal_angle, move_cmd)
-
-# 	# Return current orientation of Jackal..
-# 	return JackalRotResponse(global_current_orientation)
 
 
 

@@ -14,7 +14,6 @@ import utm
 from std_msgs.msg import Int32, String
 from geometry_msgs.msg import Twist, Point, Quaternion
 import PyKDL
-import goal_file_handler
 
 
 
@@ -122,15 +121,6 @@ class BagHandler:
 			if bag_result_obj.get('topic') == topic:
 				bag_result_obj.get('data', []).append(data_obj)  # add data to topic in results list
 		return bag_results_list
-
-
-
-	def convert_fix_data_to_goals_file(self):
-		"""
-		Takes a recorded path (e.g., /fix topic), and converts the /fix bag file data
-		into a .json file that's formatted for the Rover Watch app to plot.
-		Sources: UGA-AgRobotics/RoverWatch, and simple_navgiation_goals's goal_file_handler.py
-		"""
 
 
 

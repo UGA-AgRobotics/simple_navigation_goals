@@ -15,6 +15,7 @@ in the service modules (jackal_pos_server and jackal_rot_server)
 import roslib
 import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
+from std_msgs.msg import Bool
 from simple_navigation_goals.srv import *
 import tf
 import math
@@ -52,17 +53,17 @@ class SingleGoalNav():
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(rate)
 		
-		# Set the parameters for the target square
-		goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
-		goal_angle = rospy.get_param("~goal_angle", radians(90))    # degrees converted to radians
-		linear_speed = rospy.get_param("~linear_speed", 0.2)        # meters per second
-		angular_speed = rospy.get_param("~angular_speed", 0.7)      # radians per second
-		angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
+		# # Set the parameters for the target square
+		# goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
+		# goal_angle = rospy.get_param("~goal_angle", radians(90))    # degrees converted to radians
+		# linear_speed = rospy.get_param("~linear_speed", 0.2)        # meters per second
+		# angular_speed = rospy.get_param("~angular_speed", 0.7)      # radians per second
+		# angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 
 
-		self.step_size = 0.5  # step size to break up A->B distances (in meters)
-		self.time_step_size = self.step_size / linear_speed
+		# self.step_size = 0.5  # step size to break up A->B distances (in meters)
+		# self.time_step_size = self.step_size / linear_speed
 
 
 		
@@ -97,7 +98,7 @@ class SingleGoalNav():
 		position = Point()  # initialize the position variable as a Point type
 		move_cmd = Twist()  # initialize movement comment
 
-		move_cmd.linear.x = linear_speed  # set movement command to forward motion
+		# move_cmd.linear.x = linear_speed  # set movement command to forward motion
 
 		(position, rotation) = self.get_odom()  # get starting position values
 
@@ -131,8 +132,8 @@ class SingleGoalNav():
 
 
 		# # Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
+		print("Pausing 20 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(20)
 		print("Initiating driving to point B..")
 
 
@@ -468,6 +469,19 @@ class SingleGoalNav():
 
 
 
+def flag_callback(at_flag):
+	"""
+	Subscribes to /at_flag topic that's being published by
+	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+	"""
+	print("@@@@@@@@@@@@@ At flag: {} @@@@@@@@@@@".format(at_flag))
+	if at_flag == True:
+		print("Shutting down Jackal cause we're at the flag!!!")
+		SingleGoalNav().shutdown()
+
+
+
+
 if __name__ == '__main__':
 
 	try:
@@ -480,6 +494,9 @@ if __name__ == '__main__':
 
 	try:
 		SingleGoalNav(course)
+
+		rospy.Subscriber("at_flag", Bool, flag_callback)
+
 		# SingleGoalNav()
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")

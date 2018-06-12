@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+<param name="REACH_IP" value="$(optenv REACH_IP 192.168.131.201)" />
+<param name="REACH_SERIAL_PORT" value="$(optenv REACH_SERIAL_PORT /dev/ttyACM1)" />
+<param name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" />
+<param name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
+<param name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
+
+</launch>

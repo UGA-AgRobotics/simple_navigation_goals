@@ -23,10 +23,13 @@ import nav_tracks  # local requirement
 
 
 
+# NOTE: Adjust queue sizes for this topics..
 flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
-flag_subscriber = rospy.Subscriber('sample_complete', Bool, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 flags_global = None  # where flags in format of list of utm pairs is stored (todo: make into class?)
 flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
+
+# sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
+# sample_subscriber = rospy.Subscriber('sample_collected', Bool, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 
 
 
@@ -77,6 +80,16 @@ def position_callback(current_fix):
 
 
 
+def sample_callback(sample_msg):
+	"""
+	sample_collected subscriber callback. waiting for a True
+	in order to tell the robot that the sample is collected and to
+	drive on to the next goal in the course.
+	"""
+	print("Sample message: {}".format(sample_msg))
+
+
+
 
 def start_flag_node(flags):
 
@@ -92,6 +105,8 @@ def start_flag_node(flags):
 	rospy.init_node('flag_node', anonymous=True)
 
 	rospy.Subscriber("/fix", NavSatFix, position_callback, queue_size=1)
+
+	rospy.Subscriber('/sample_collected', Bool, sample_callback, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 
 	# spin() simply keeps python from exiting until this node is stopped
 	rospy.spin()

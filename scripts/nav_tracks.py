@@ -38,6 +38,8 @@ class NavTracks(object):
 		self.track5 = [[259739.9971399921, 3485057.0322162253],  # 2nd and 3rd flag from track4
 						[259737.0933967415, 3485057.0991809973]]
 
+		self.track6 = [[259765.98202132434, 3485069.0036241673]]  # Flag set by RoverWatch at arch of Glen's grass course (06/08/18)
+
 
 	def get_track(self, track):
 
@@ -55,6 +57,10 @@ class NavTracks(object):
 
 		goals = course.get('goals')  # get list of goals
 		track_list = []  # track list from course positions
+
+		if not goals:
+			print("'goals' key not found, checking 'flags' key..")
+			goals = course.get('flags')
 
 		if len(goals) <= 0:
 			raise "Could not find goals in course object, make_track_from_course function, nav_tracks module.."

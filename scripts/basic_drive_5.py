@@ -29,7 +29,8 @@ import dubins
 
 # Local package requirements:
 from nav_tracks import NavTracks
-import jackal_nav_controller  # handles drive and turn routines
+# import jackal_nav_controller  # handles drive and turn routines
+from jackal_nav_controller import NavController
 
 
 
@@ -41,6 +42,7 @@ class SingleGoalNav():
 	"""
 
 	def __init__(self, course=None):
+		
 		# Give the node a name
 		rospy.init_node('single_goal_nav', anonymous=False)
 		
@@ -53,17 +55,22 @@ class SingleGoalNav():
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(rate)
 		
-		# # Set the parameters for the target square
-		# goal_distance = rospy.get_param("~goal_distance", 1.0)      # meters
-		# goal_angle = rospy.get_param("~goal_angle", radians(90))    # degrees converted to radians
-		# linear_speed = rospy.get_param("~linear_speed", 0.2)        # meters per second
-		# angular_speed = rospy.get_param("~angular_speed", 0.7)      # radians per second
-		# angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
+
+		self.at_flag = False  # keeps track of if robot is at a flag or not
 
 
 
-		# self.step_size = 0.5  # step size to break up A->B distances (in meters)
-		# self.time_step_size = self.step_size / linear_speed
+
+		self.nav_controller = NavController()
+
+
+
+		# rospy.Subscriber("at_flag", Bool, self.flag_callback)  # sub to /at_flag topic
+
+
+
+
+
 
 
 		
@@ -93,6 +100,12 @@ class SingleGoalNav():
 				rospy.loginfo("Cannot find transform between /odom and /base_link or /base_footprint")
 				rospy.signal_shutdown("tf Exception")
 
+
+
+
+
+		# ALL THIS IS TEMPORARILY COMMENTED OUT FOR TESTING THE FLAG NODE!!!!
+		# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 		position = Point()  # initialize the position variable as a Point type
@@ -132,8 +145,8 @@ class SingleGoalNav():
 
 
 		# # Sleep routine for testing:
-		print("Pausing 20 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(20)
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(10)
 		print("Initiating driving to point B..")
 
 
@@ -185,6 +198,10 @@ class SingleGoalNav():
 
 
 			print("Executing drive routine..")
+			print("Robot's at_flag val: {}".format(self.at_flag))
+			# while not self.at_flag:
+			# 	self.p2p_drive_routine(current_goal)
+
 			self.p2p_drive_routine(current_goal)
 
 			curr_pose_utm = self.get_current_position()
@@ -204,6 +221,8 @@ class SingleGoalNav():
 
 		print("Shutting down Jackal..")
 		self.shutdown()
+
+		# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -227,7 +246,8 @@ class SingleGoalNav():
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
 			# self.call_jackal_rot_service(turn_angle)
-			jackal_nav_controller.execute_turn(radians(turn_angle))
+			# jackal_nav_controller.execute_turn(radians(turn_angle))
+			self.nav_controller.execute_turn(radians(turn_angle))
 			print("Finished turning..")
 
 		drive_distance = self.determine_drive_distance(A, B)
@@ -235,7 +255,8 @@ class SingleGoalNav():
 		if drive_distance > 0:
 			print("Driving Jackal {} meters..".format(drive_distance))
 			# self.get_jackal_pos_from_service(drive_distance)
-			jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
+			# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
+			self.nav_controller.drive_forward(drive_distance, self.look_ahead)
 			print("Finished driving..")
 
 
@@ -443,8 +464,9 @@ class SingleGoalNav():
 		"""
 		Always stop the robot when shutting down the node
 		"""
-		rospy.loginfo("Stopping the robot...")
-		self.cmd_vel.publish(Twist())
+		rospy.loginfo(">>>>> Stopping the robot by publishing blank Twist to jackal_nav_controller..")
+		# jackal_nav_controller.cmd_vel.publish(Twist())  # stop that robot!
+		self.nav_controller.cmd_vel.publish(Twist())
 		rospy.sleep(1)
 
 
@@ -457,27 +479,20 @@ class SingleGoalNav():
 		return get_jackal_pos()
 
 
-	# def call_jackal_rot_service(self, angle):
-	# 	"""
-	# 	Get current IMU position and orientation from Jackal.
-	# 	Inputs:
-	# 		angle - angle to turn in radians
-	# 	"""
-	# 	rospy.wait_for_service('get_jackal_rot')
-	# 	get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-	# 	return get_jackal_rot(angle)
 
+	def flag_callback(self, at_flag):
+		"""
+		Subscribes to /at_flag topic that's being published by
+		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+		"""
+		print("At flag?: {}".format(at_flag.data))
 
+		if at_flag.data == True or at_flag == True:
+			print("Shutting down Jackal cause we're at the flag!!!")
+			self.at_flag = True  # sets main at_flag to True for robot..
+			# self.shutdown()
+			# return
 
-def flag_callback(at_flag):
-	"""
-	Subscribes to /at_flag topic that's being published by
-	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
-	"""
-	print("@@@@@@@@@@@@@ At flag: {} @@@@@@@@@@@".format(at_flag))
-	if at_flag == True:
-		print("Shutting down Jackal cause we're at the flag!!!")
-		SingleGoalNav().shutdown()
 
 
 
@@ -494,9 +509,10 @@ if __name__ == '__main__':
 
 	try:
 		SingleGoalNav(course)
-
-		rospy.Subscriber("at_flag", Bool, flag_callback)
-
 		# SingleGoalNav()
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")
+		rospy.loginfo("Shutting down drive node!")
+		raise Exception("basic drive ROS node exception")
+
+	rospy.spin()

@@ -23,7 +23,8 @@ import nav_tracks  # local requirement
 
 
 
-flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=10)
+flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
+flag_subscriber = rospy.Subscriber('sample_complete', Bool, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 flags_global = None  # where flags in format of list of utm pairs is stored (todo: make into class?)
 flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
 
@@ -33,6 +34,7 @@ def get_utm_from_fix(current_fix):
 	"""
 	Converts fix object with 'latitude' and 'longitude' to utm
 	"""
+	flag_publisher.publish(False)
 	return utm.from_latlon(current_fix.latitude, current_fix.longitude)
 
 

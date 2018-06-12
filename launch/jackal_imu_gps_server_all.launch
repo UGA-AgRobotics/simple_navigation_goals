@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
+	<param name="REACH_IP" value="$(optenv REACH_PORT /dev/ttyACM1)" />
 	<param name="REACH_PORT" value="$(optenv REACH_PORT /dev/ttyACM1)" />
 	<param name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" />
 	<param name="ARDUINO_PORT" value="$(optenv ARDUINO_PORT /dev/ttyACM2)" />

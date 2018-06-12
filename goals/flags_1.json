@@ -1,0 +1,16 @@
+{
+  "date": "06-08-2018",
+  "units": "dec",
+  "location": "Engineering Annex",
+  "goals": [
+    {
+      "dsmPos": {},
+      "index": 1,
+      "decPos": {
+        "lat": 31.475488308333333,
+        "lon": -83.52869350333333
+      },
+      "utmPos": {}
+    }
+  ]
+}

@@ -36,7 +36,7 @@ class EmlidSocketIOClient:
 
 		self.status_options = ['fix', 'float', 'single', '-']
 
-		self.arduino = serial.Serial(self.arduino_port, self.arduino_baud, timeout=0.2, write_timeout=0.2)  # initiate conn to arduino via serial
+		self.arduino = serial.Serial(self.arduino_port, self.arduino_baud, timeout=0.2)  # initiate conn to arduino via serial
 		time.sleep(2)  # waiting to ensure connection to arduino before writing to it..
 
 		self.connect_to_socketio_server()  # initiate conn to emlid's socketio server

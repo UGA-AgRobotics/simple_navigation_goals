@@ -3,6 +3,8 @@
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
 	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen">
+
+		
 		
 	</node> 
 	

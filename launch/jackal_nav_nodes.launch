@@ -8,7 +8,10 @@
 	<!-- <param name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" /> -->
 
 	<!-- Load env vars -->
-	<include file="$(find simple_navigation_goals)/launch/ros_env_vars.launch" />
+	<!-- <include file="$(find simple_navigation_goals)/launch/ros_env_vars.launch" /> -->
+
+	<!-- Load ROS params -->
+	<rosparam command="load" file="$(find simple_navigation_goals)/config/red_rover_config.yaml" />
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
 	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen">

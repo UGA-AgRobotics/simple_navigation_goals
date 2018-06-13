@@ -32,6 +32,8 @@ class NavController:
 
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 
+		self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
+
 		self.at_flag = False
 
 
@@ -46,6 +48,10 @@ class NavController:
 		if flag_msg.data == True or flag_msg == True:
 			print("Shutting down Jackal cause we're at the flag!!!")
 			self.at_flag = True  # sets main at_flag to True for robot..
+
+			# Perform anyother operations on Rover when it gets to flag, like
+			# publishing to /collect_sample topic..
+			self.sample_publisher.publish(True)  # send True on /collect_sample to initate sample collection routine
 
 
 

@@ -1,14 +1,17 @@
 <?xml version="1.0"?>
 <launch>
 
-	<param name="REACH_IP" value="$(optenv REACH_IP 192.168.131.201)" />
-	<param name="REACH_SERIAL_PORT" value="$(optenv REACH_SERIAL_PORT /dev/ttyACM1)" />
-	<param name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" />
-	<param name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
-	<param name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
+	<!-- <param name="REACH_IP" value="$(optenv REACH_IP 192.168.131.201)" /> -->
+	<!-- <param name="REACH_SERIAL_PORT" value="$(optenv REACH_SERIAL_PORT /dev/ttyACM1)" /> -->
+	<!-- <param name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" /> -->
+	<!-- <param name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" /> -->
+	<!-- <param name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" /> -->
+
+	<!-- Load env vars -->
+	<include file="$(find simple_navigation_goals)/launch/ros_env_vars.launch" />
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
-	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen"></node>
+	<!-- <node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen"></node> -->
 	
 	<!-- Launches file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />

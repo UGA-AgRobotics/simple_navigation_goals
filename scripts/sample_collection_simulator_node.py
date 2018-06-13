@@ -18,7 +18,6 @@ class SampleCollectorSimulator:
 	def __init__(self):
 
 		self.collection_delay = 10  # simulated sample collection delay (units: seconds)
-
 		self.sample_publisher = rospy.Publisher('/sample_collected', Bool, queue_size=1)  # publishes True when sample is collected
 		self.sample_subscriber = rospy.Subscriber('/collect_sample', Bool, self.sample_callback queue_size=1)  # subs to collect_sample to know when to start sample collection
 

@@ -95,10 +95,10 @@ class EmlidSocketIOClient:
 		Sends status ('fix', 'float', 'single', or '-') to arduino for
 		status light indicator circuit.
 		"""
-		print("status message type: {}".format(type(status)))
+		# print("status message type: {}".format(type(status)))
 
 		if status in self.status_options:
-			print("Send '{}' message to arduino..".format(status))
+			# print("Send '{}' message to arduino..".format(status))
 			self.arduino.write(str(status))
 		else:
 			raise Exception("Status {} not recognized..")

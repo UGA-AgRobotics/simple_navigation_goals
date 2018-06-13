@@ -1,6 +1,17 @@
+<?xml version="1.0"?>
+
 <launch>
 
+	<!-- Loads environment variables used for Red Rover project -->
+	<include file="$(find simple_navigation_goals)/launch/ros_env_vars.launch" />
+
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
-	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen"></node>
+	<node pkg="simple_navigation_goals" name="jackal_flags_node" type="jackal_flags_node.py" output="screen">
+	</node>
+
+	<!-- Launches sample_collection_simulator_node.py -->
+	<!-- <node pkg="simple_navigation_goals" name="sample_collection_simulator_node" type="sample_collection_simulator_node.py" output="screen"> -->
+	<!-- </node>	 -->
+
 
 </launch>

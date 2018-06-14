@@ -37,7 +37,6 @@ def get_utm_from_fix(current_fix):
 	"""
 	Converts fix object with 'latitude' and 'longitude' to utm
 	"""
-	flag_publisher.publish(False)
 	return utm.from_latlon(current_fix.latitude, current_fix.longitude)
 
 
@@ -61,9 +60,11 @@ def compare_position_to_flags(current_utm):
 		if distance <= flag_tolerance:
 			print("robot has reached the flag within given tolerance!")
 			flag_publisher.publish(True)  # Publishes to drive routine to stop robot at the flag
-			break
+			return
 
 		flag_counter += 1
+
+	flag_publisher.publish(False)
 
 	return
 
@@ -102,6 +103,7 @@ def start_flag_node(flags):
 	# anonymous=True flag means that rospy will choose a unique
 	# name for our 'listener' node so that multiple listeners can
 	# run simultaneously.
+	
 	rospy.init_node('flag_node', anonymous=True)
 
 	rospy.Subscriber("/fix", NavSatFix, position_callback, queue_size=1)

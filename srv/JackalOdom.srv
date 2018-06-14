@@ -1,3 +1,0 @@
-float64 turn_angle
----
-nav_msgs/Odometry jackal_odom

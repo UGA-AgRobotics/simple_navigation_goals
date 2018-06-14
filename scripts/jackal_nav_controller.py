@@ -29,6 +29,7 @@ class NavController:
 	def __init__(self):
 
 		rospy.Subscriber("at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
+		rospy.Subscriber("sample_collected", Bool, self.sample_collected_callback)
 
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 
@@ -52,6 +53,31 @@ class NavController:
 			# Perform anyother operations on Rover when it gets to flag, like
 			# publishing to /collect_sample topic..
 			self.sample_publisher.publish(True)  # send True on /collect_sample to initate sample collection routine
+
+
+			# Maybe call sample collector as service here????????
+
+			
+
+
+
+		else:
+			self.sample_publisher.publish(False)
+
+
+
+	def sample_collector_callback(self, msg):
+		"""
+		Subscribes to /sample_collected topic from the
+		sample_collection_simulator_node.py 
+
+		NOTE: It might be better to make the sample collector node
+		a service.
+
+		"""
+		print("Sample collector callback message: {}".format(msg))
+		print("Start driving to the next point")
+
 
 
 

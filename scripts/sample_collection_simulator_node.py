@@ -17,11 +17,16 @@ class SampleCollectorSimulator:
 
 	def __init__(self):
 
+		rospy.init_node('sample_collector_node', anonymous=True)
+
+		print("Started node.")
+
 		self.collection_delay = 10  # simulated sample collection delay (units: seconds)
 		self.sample_publisher = rospy.Publisher('/sample_collected', Bool, queue_size=1)  # publishes True when sample is collected
 		self.sample_subscriber = rospy.Subscriber('/collect_sample', Bool, self.sample_callback, queue_size=1)  # subs to collect_sample to know when to start sample collection
 
-		
+		rospy.spin()
+
 
 	def sample_callback(self, msg):
 		"""
@@ -38,3 +43,13 @@ class SampleCollectorSimulator:
 			print("Sample collection complete.")
 			print("Sending True on /sample_collected back to robot to continue on to the next flag..")
 			self.sample_publisher.publish(True)
+
+
+
+
+
+
+
+if __name__ == '__main__':
+	print("Starting node.")
+	sample_collector = SampleCollectorSimulator()

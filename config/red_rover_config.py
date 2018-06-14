@@ -48,7 +48,7 @@ class DeployEnv(object):
 	# 			print("Error loading env vars from .json file: {}".format(self.json_file))
 	# 			raise
 
-	def add_environment_to_rosparam_server(self):
+	def add_vars_to_rosparams(self):
 		"""
 		Loops through key:vals from yaml env file and sets them as
 		rosparams.
@@ -73,5 +73,4 @@ if __name__ == '__main__':
 	print("Loading .yaml file: {}".format(deploy_env.yaml_file))
 	deploy_env.load_deployment_environment()
 	# deploy_env.load_environment()  # loads env vars from json file (using yaml for now)
-
-	deploy_env.add_environment_to_rosparam_server()
+	deploy_env.add_vars_to_rosparams()

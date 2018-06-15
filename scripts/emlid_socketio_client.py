@@ -7,12 +7,13 @@ import time
 import sys
 import roslib
 import rospy
+from arduino_controller import ArduinoController
 
 
 
 class EmlidSocketIOClient:
 
-	def __init__(self, reach_ip=None, reach_port=None, arduino_serial_port=None, arduino_baud=None):
+	def __init__(self, reach_ip=None, reach_port=None, arduino_serial_port=None, arduino_baud=None, test_routine=False):
 
 		# To set DEBUG for more verbose messages for troubleshooting, 
 		# uncomment below logging lines:
@@ -35,13 +36,28 @@ class EmlidSocketIOClient:
 		]
 
 		self.status_options = ['fix', 'float', 'single', '-']
+		self.off_signal = 'off'  # turn all LEDs off on arduino
+		self.flag_on_signal = 'flag'
+		self.flag_off_signal = 'flagoff'
+
+		self.arduino_controller = ArduinoController(self.arduino_serial_port, self.arduino_baud)
+
+		# Runs socketio server if not running a test routine:
+		if test_routine:
+			self.run_light_test()
+		else:
+			self.connect_to_socketio_server()  # initiate connection to emlid's socketio server
 
 
-		self.arduino = serial.Serial(self.arduino_serial_port, self.arduino_baud, timeout=0.2)  # initiate conn to arduino via serial
 
-		time.sleep(2)  # waiting to ensure connection to arduino before writing to it..
-
-		self.connect_to_socketio_server()  # initiate conn to emlid's socketio server
+	def run_light_test(self):
+		"""
+		Tests signal lights on arduino for solution status, et al.
+		"""
+		test_messages = self.status_options + [self.off_signal, self.flag_on_signal, self.flag_off_signal]
+		print("Sending the following test messages to arduino test routine: {}".format(test_messages))
+		test_result = self.arduino_controller.simple_arduino_test(test_messages)
+		return test_result
 
 
 
@@ -79,12 +95,12 @@ class EmlidSocketIOClient:
 		
 		solution_status = msg.get('solution status')
 
-		print("----");
-		print("Solution Status: " + solution_status);
-		print("Age of Differential (s): " + msg.get('age of differential (s)'));
-		print("AR Validation Ratio: " + msg.get('ratio for ar validation'));
-		print("Baseline (m): " + msg.get('baseline length float (m)'));
-		print("----");
+		# print("----");
+		# print("Solution Status: " + solution_status);
+		# print("Age of Differential (s): " + msg.get('age of differential (s)'));
+		# print("AR Validation Ratio: " + msg.get('ratio for ar validation'));
+		# print("Baseline (m): " + msg.get('baseline length float (m)'));
+		# print("----");
 
 		self.send_status_to_arduino(solution_status)
 

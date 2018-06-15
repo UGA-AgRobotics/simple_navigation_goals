@@ -115,7 +115,8 @@ class EmlidSocketIOClient:
 
 		if status in self.status_options:
 			# print("Send '{}' message to arduino..".format(status))
-			self.arduino.write(str(status))
+			# self.arduino.write(str(status))
+			self.arduino_controller.arduino.write(str(status))
 		else:
 			raise Exception("Status {} not recognized..")
 

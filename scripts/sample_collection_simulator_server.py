@@ -20,7 +20,6 @@ class SampleCollectorSimulator:
 
 		self.collection_delay = 10  # simulated sample collection delay (units: seconds)
 
-		print "sample_ subscribed to /fix from Jackal.."
 		print "Jackal sample collector node ready.."
 
 		rospy.spin()

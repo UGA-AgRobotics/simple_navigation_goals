@@ -144,10 +144,10 @@ class SingleGoalNav():
 
 
 
-		# # Sleep routine for testing:
-		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		# rospy.sleep(10)
-		# print("Initiating driving to point B..")
+		# Sleep routine for testing:
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(10)
+		print("Initiating driving to point B..")
 
 
 

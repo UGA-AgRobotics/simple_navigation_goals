@@ -23,96 +23,107 @@ import nav_tracks  # local requirement
 
 
 
-# NOTE: Adjust queue sizes for this topics..
-flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
-flags_global = None  # where flags in format of list of utm pairs is stored (todo: make into class?)
-flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
+class FlagHandler:
 
-# sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
-# sample_subscriber = rospy.Subscriber('sample_collected', Bool, queue_size=1)  # indicates to rover sample is collected, drive to next flag
+	def __init__(self, flags=None):
+
+		self.flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
+		self.flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
+		self.flag_index = 0  # Index of the robot's current flag it's going toward
+		self.flag_run_complete = False
+
+		self.flags = flags  # where flags in format of list of utm pairs is stored
+
+		if not self.flags:
+			raise Exception("Must project jackal_flags_node with flags file")
+
+		print("Flags list: {}".format(self.flags))
 
 
-
-def get_utm_from_fix(current_fix):
-	"""
-	Converts fix object with 'latitude' and 'longitude' to utm
-	"""
-	return utm.from_latlon(current_fix.latitude, current_fix.longitude)
-
-
-
-def compare_position_to_flags(current_utm):
-	"""
-	Loops through flags and calculates distance from current
-	position to the flags. If within some distance, publish on /at_flag
-	topic to tell robot to stop!
-	"""
-	global flags_global
-	global flag_tolerance
-
-	print("Flag tolerance: {}".format(flag_tolerance))
-
-	flag_counter = 1
-	for flag_pos in flags_global:
-		distance = math.sqrt((current_utm[1] - flag_pos[1])**2 + (current_utm[0] - flag_pos[0])**2)
-		print("Flag {} distance: {}".format(flag_counter, distance))
-
-		if distance <= flag_tolerance:
-			print("robot has reached the flag within given tolerance!")
-			flag_publisher.publish(True)  # Publishes to drive routine to stop robot at the flag
-			return
-
-		flag_counter += 1
-
-	flag_publisher.publish(False)
-
-	return
+	def get_utm_from_fix(self, current_fix):
+		"""
+		Converts fix object with 'latitude' and 'longitude' to utm
+		"""
+		return utm.from_latlon(current_fix.latitude, current_fix.longitude)
 
 
 
-def position_callback(current_fix):
-	"""
-	Position callback, which is executed in the event that a GPS fix is
-	published by the Jackal.
-	"""
-	# print "jackal_pos_server: jackal's position: {}".format(current_fix)
-	current_utm = get_utm_from_fix(current_fix)  # converts current fix to utm
-	compare_position_to_flags(current_utm)
+	def compare_position_to_flags(self, current_utm):
+		"""
+		Loops through flags and calculates distance from current
+		position to the flags. If within some distance, publish on /at_flag
+		topic to tell robot to stop!
+		"""
+
+		current_flag = self.flags[self.flag_index]  # grab current flag, format: [easting, northing]
+
+		flag_distance = math.sqrt((current_utm[1] - current_flag[1])**2 + (current_utm[0] - current_flag[0])**2)
+
+		print("Distance from flag {}: {}".format(self.flag_index, flag_distance))
+
+		if flag_distance <= self.flag_tolerance:
+			print("Robot has reached the flag within given tolerance!")
+			print("Sending message to nav controller to stop the robot.")
+			self.flag_publisher.publish(True)  # Publishes to drive routine to stop robot at the flag
+
+			if len(self.flags) < self.flag_index:
+				self.flag_index += 1  # increment to next flag in list
+				print("Setting flag to next one in list, {}".format(self.flags[self.flag_index]))
+			else:
+				print(">>> Finished driving to flags list. <<<")
+				print(">>> Continuing the rest of the row <<<")
+				self.flag_publisher.publish(False)
+				self.flag_run_complete = True
+
+		else:
+			self.flag_publisher.publish(False)
+		
+		return
 
 
 
-def sample_callback(sample_msg):
-	"""
-	sample_collected subscriber callback. waiting for a True
-	in order to tell the robot that the sample is collected and to
-	drive on to the next goal in the course.
-	"""
-	print("Sample message: {}".format(sample_msg))
+	def position_callback(self, current_fix):
+		"""
+		Position callback, which is executed in the event that a GPS fix is
+		published by the Jackal.
+		"""
+		# print "jackal_pos_server: jackal's position: {}".format(current_fix)
+		current_utm = self.get_utm_from_fix(current_fix)  # converts current fix to utm
+
+		if not self.flag_run_complete:
+			self.compare_position_to_flags(current_utm)
+
+		return
+
+
+
+	def sample_callback(self, sample_msg):
+		"""
+		sample_collected subscriber callback. waiting for a True
+		in order to tell the robot that the sample is collected and to
+		drive on to the next goal in the course.
+		"""
+		print("Sample message: {}".format(sample_msg))
 
 
 
 
-def start_flag_node(flags):
+	def start_flag_node(self):
 
-	# Sets global flags variable to be used by module
-	global flags_global
-	flags_global = flags
+		# In ROS, nodes are uniquely named. If two nodes with the same
+		# node are launched, the previous one is kicked off. The
+		# anonymous=True flag means that rospy will choose a unique
+		# name for our 'listener' node so that multiple listeners can
+		# run simultaneously.
+		
+		rospy.init_node('flag_node', anonymous=True)
 
-	# In ROS, nodes are uniquely named. If two nodes with the same
-	# node are launched, the previous one is kicked off. The
-	# anonymous=True flag means that rospy will choose a unique
-	# name for our 'listener' node so that multiple listeners can
-	# run simultaneously.
-	
-	rospy.init_node('flag_node', anonymous=True)
+		rospy.Subscriber("/fix", NavSatFix, self.position_callback, queue_size=1)
 
-	rospy.Subscriber("/fix", NavSatFix, position_callback, queue_size=1)
+		rospy.Subscriber('/sample_collected', Bool, self.sample_callback, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 
-	rospy.Subscriber('/sample_collected', Bool, sample_callback, queue_size=1)  # indicates to rover sample is collected, drive to next flag
-
-	# spin() simply keeps python from exiting until this node is stopped
-	rospy.spin()
-
+		# spin() simply keeps python from exiting until this node is stopped
+		rospy.spin()
 
 
 
@@ -121,6 +132,8 @@ def start_flag_node(flags):
 
 
 if __name__ == '__main__':
+
+	# TODO: Add this routine as a function in FileHandler class:
 
 	_flag_filename = None  # input arg for filename of flags file
 
@@ -139,6 +152,7 @@ if __name__ == '__main__':
 	flags = nt.get_track_from_course(fh.flags)  # converts flags file to list of utm pairs
 
 	try:
-		start_flag_node(flags)
+		flag_handler = FlagHandler(flags)
+		flag_handler.start_flag_node()
 	except rospy.ROSInterruptException:
-		pass
+		raise

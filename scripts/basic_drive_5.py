@@ -145,9 +145,9 @@ class SingleGoalNav():
 
 
 		# # Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
-		print("Initiating driving to point B..")
+		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		# rospy.sleep(10)
+		# print("Initiating driving to point B..")
 
 
 
@@ -480,18 +480,18 @@ class SingleGoalNav():
 
 
 
-	def flag_callback(self, at_flag):
-		"""
-		Subscribes to /at_flag topic that's being published by
-		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
-		"""
-		print("At flag?: {}".format(at_flag.data))
+	# def flag_callback(self, at_flag):
+	# 	"""
+	# 	Subscribes to /at_flag topic that's being published by
+	# 	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+	# 	"""
+	# 	print("At flag?: {}".format(at_flag.data))
 
-		if at_flag.data == True or at_flag == True:
-			print("Shutting down Jackal cause we're at the flag!!!")
-			self.at_flag = True  # sets main at_flag to True for robot..
-			# self.shutdown()
-			# return
+	# 	if at_flag.data == True or at_flag == True:
+	# 		print("Shutting down Jackal cause we're at the flag!!!")
+	# 		self.at_flag = True  # sets main at_flag to True for robot..
+	# 		# self.shutdown()
+	# 		# return
 
 
 

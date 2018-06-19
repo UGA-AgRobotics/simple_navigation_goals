@@ -28,7 +28,7 @@ class FlagHandler:
 	def __init__(self, flags=None):
 
 		self.flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
-		self.flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
+		self.flag_tolerance = 0.4  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 
@@ -62,18 +62,30 @@ class FlagHandler:
 		print("Distance from flag {}: {}".format(self.flag_index, flag_distance))
 
 		if flag_distance <= self.flag_tolerance:
+			
 			print("Robot has reached the flag within given tolerance!")
 			print("Sending message to nav controller to stop the robot.")
+			
 			self.flag_publisher.publish(True)  # Publishes to drive routine to stop robot at the flag
 
-			if len(self.flags) < self.flag_index:
-				self.flag_index += 1  # increment to next flag in list
-				print("Setting flag to next one in list, {}".format(self.flags[self.flag_index]))
-			else:
+			if self.flag_index >= len(self.flags) - 1:
 				print(">>> Finished driving to flags list. <<<")
 				print(">>> Continuing the rest of the row <<<")
 				self.flag_publisher.publish(False)
 				self.flag_run_complete = True
+				return
+
+			self.flag_index += 1
+
+
+			# if self.flag_index < len(self.flags):
+			# 	self.flag_index += 1  # increment to next flag in list
+			# 	print("Setting flag to next one in list, {}".format(self.flags[self.flag_index]))
+			# else:
+			# 	print(">>> Finished driving to flags list. <<<")
+			# 	print(">>> Continuing the rest of the row <<<")
+			# 	self.flag_publisher.publish(False)
+			# 	self.flag_run_complete = True
 
 		else:
 			self.flag_publisher.publish(False)
@@ -90,7 +102,7 @@ class FlagHandler:
 		# print "jackal_pos_server: jackal's position: {}".format(current_fix)
 		current_utm = self.get_utm_from_fix(current_fix)  # converts current fix to utm
 
-		if not self.flag_run_complete:
+		if not self.flag_run_complete and self.flag_index < len(self.flags):
 			self.compare_position_to_flags(current_utm)
 
 		return

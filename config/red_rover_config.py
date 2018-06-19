@@ -4,8 +4,9 @@ import os
 import rospy
 import sys
 import logging
-from dotenv import load_dotenv
-# import requests
+# from dotenv import load_dotenv
+from io import StringIO
+from dotenv import dotenv_values
 import yaml
 import json
 
@@ -21,10 +22,10 @@ class DeployEnv(object):
 	def __init__(self, yaml_file=None, json_file=None):
 		self.yaml_file = yaml_file or 'red_rover_config.yaml'  # filename for .yaml environment
 		self.yaml_env = {}  # dict for .yaml environment
-		# self.json_file = json_file or 'red_rover_config.json'
-		# self.json_env = {}
 
-	def load_deployment_environment(self):
+
+
+	def load_yaml_deployment_environment(self):
 		"""
 		Loads the yaml env file instead a python dictionary
 		"""
@@ -35,7 +36,9 @@ class DeployEnv(object):
 				print("Error reading yaml env var file at config/red_rover_config.py")
 				raise e
 
-	# def load_environment(self):
+
+
+	# def load_json_environment_file(self):
 	# 	"""
 	# 	Same as above load_deployment_environment(), but for json file.
 	# 	Going to use yaml unless objects become an issue (i.e., serializing 
@@ -47,6 +50,8 @@ class DeployEnv(object):
 	# 		except Exception:
 	# 			print("Error loading env vars from .json file: {}".format(self.json_file))
 	# 			raise
+
+
 
 	def add_vars_to_rosparams(self):
 		"""
@@ -63,6 +68,21 @@ class DeployEnv(object):
 
 
 
+	# def add_vars_to_environment(self):
+	# 	"""
+	# 	Uses dotenv python module to store yaml params in the environment.
+	# 	Using a .yaml instead of .env in case we migrate everything to just using
+	# 	ROS (i.e., all config in rosparam server), so env vars are set
+	# 	using file-likes (https://github.com/theskumar/python-dotenv#in-memory-filelikes)
+	# 	"""
+
+	# 	for key, val in self.yaml_env.items():
+
+	# 		filelike = StringIO("{}={}\n".format(key, val))  # key:val stored in-memory temporarily
+	# 		filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
+	# 		parsed = dotenv_values(stream=filelike)
+			
+
 
 
 
@@ -71,6 +91,11 @@ if __name__ == '__main__':
 
 	deploy_env = DeployEnv()
 	print("Loading .yaml file: {}".format(deploy_env.yaml_file))
-	deploy_env.load_deployment_environment()
-	# deploy_env.load_environment()  # loads env vars from json file (using yaml for now)
+	deploy_env.load_yaml_deployment_environment()
+	print("success.")
+	print("Adding config as rosparams..")
 	deploy_env.add_vars_to_rosparams()
+	print("success.")
+	# print("Adding config to environment as well..")
+	# deploy_env.add_vars_to_environment()
+	# print("success.")

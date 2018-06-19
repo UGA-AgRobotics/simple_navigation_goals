@@ -7,15 +7,8 @@
 	<arg name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
 	<arg name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
 
-	<!-- Load env vars -->
-	<!-- <include file="$(find simple_navigation_goals)/launch/ros_env_vars.launch" /> -->
-
-	<!-- Load ROS params -->
-	<!-- <rosparam command="load" file="$(find simple_navigation_goals)/config/red_rover_config.yaml" /> -->
-
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
-	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen">
-	</node>
+	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen" args="$(arg REACH_IP) 80 $(arg ARDUINO_SERIAL_PORT) $(arg ARDUINO_BAUD)" />
 	
 	<!-- Launches file for rosbridge server -->
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
@@ -28,5 +21,11 @@
 
 	<!-- Launches IMU launch file -->
 	<include file="$(find simple_navigation_goals)/launch/imu.launch" ns="phidget" />
+
+	<!-- Launches jackal position service -->
+	<node pkg="simple_navigation_goals" name="jackal_pos_server" type="jackal_pos_server.py" output="screen" />
+
+	<!-- Launches jackal rotation service -->
+	<node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" />
 
 </launch>

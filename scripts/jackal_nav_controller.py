@@ -48,7 +48,7 @@ class NavController:
 		Subscribes to /at_flag topic that's being published by
 		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
 		"""
-		print("At flag? {}".format(flag_msg.data))
+		# print("At flag? {}".format(flag_msg.data))
 
 		if flag_msg.data == True or flag_msg == True:
 			print("Stopping cause we're at the flag!!!")

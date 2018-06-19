@@ -145,10 +145,10 @@ if __name__ == '__main__':
 		print("No inputs provided for reach ip or reach port, so using defaults..")
 		print("Trying to use ROS get_param, assuming it's being run as ROS node instead of from terminal..")
 
-		_reach_ip = rospy.get_param('~REACH_IP', '192.168.131.201')  # IP address of Reach unit on RoverNet
-		_reach_port = rospy.get_param('~REACH_PORT', 80)  # connect to Reach HTTP port
-		_arduino_serial_port = rospy.get_param('~ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
-		_arduino_baud = rospy.get_param('~ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
+		_reach_ip = rospy.get_param('REACH_IP', '192.168.131.201')  # IP address of Reach unit on RoverNet
+		_reach_port = rospy.get_param('REACH_PORT', 80)  # connect to Reach HTTP port
+		_arduino_serial_port = rospy.get_param('ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
+		_arduino_baud = rospy.get_param('ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
 
 	# Starts Emlid Reach RS SocketIO Client:
 	emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port, _arduino_serial_port, _arduino_baud)

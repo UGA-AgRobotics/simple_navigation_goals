@@ -69,8 +69,12 @@ class DeployEnv(object):
 		# 	filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
 		# 	parsed = dotenv_values(stream=filelike)
 		print("Env vars note: everything is considered a string")
-		for key, val in self.yaml_env.items():
-			dotenv.set_key(self.env_file, key, str(val))
+		try:
+			for key, val in self.yaml_env.items():
+				dotenv.set_key(self.env_file, key, str(val))
+		except Exception:
+			print("Exception occurred!")
+			raise
 
 
 

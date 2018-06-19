@@ -55,25 +55,24 @@ class DeployEnv(object):
 
 
 
-	def add_vars_to_environment(self):
-		"""
-		Uses dotenv python module to store yaml params in the environment.
-		Using a .yaml instead of .env in case we migrate everything to just using
-		ROS (i.e., all config in rosparam server), so env vars are set
-		using file-likes (https://github.com/theskumar/python-dotenv#in-memory-filelikes)
-		"""
-		# print("Loading env vars from {} to the environment..".format(self.env_file))
-		# dotenv.load_dotenv(dotenv_path='red_rover_config.env')
+	# def add_vars_to_environment(self):
+	# 	"""
+	# 	Uses dotenv python module to store yaml params in the environment.
+	# 	Using a .yaml instead of .env in case we migrate everything to just using
+	# 	ROS (i.e., all config in rosparam server), so env vars are set
+	# 	using file-likes (https://github.com/theskumar/python-dotenv#in-memory-filelikes)
+	# 	"""
+	# 	# print("Loading env vars from {} to the environment..".format(self.env_file))
+	# 	# dotenv.load_dotenv(dotenv_path='red_rover_config.env')
 
-		# for key, val in self.yaml_env.items():
-		# 	filelike = StringIO("{}={}\n".format(key, val))  # key:val stored in-memory temporarily
-		# 	filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
-		# 	parsed = dotenv_values(stream=filelike)
-		print("Env vars note: everything is considered a string")
-		for key, val in self.yaml_env.items():
-			dotenv.set_key(self.env_file, key, str(val))
-
-		dotenv.load_dotenv(self.env_file)
+	# 	# for key, val in self.yaml_env.items():
+	# 	# 	filelike = StringIO("{}={}\n".format(key, val))  # key:val stored in-memory temporarily
+	# 	# 	filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
+	# 	# 	parsed = dotenv_values(stream=filelike)
+	# 	# print("Env vars note: everything is considered a string")
+	# 	# for key, val in self.yaml_env.items():
+	# 	# 	dotenv.set_key(self.env_file, key, str(val))
+	# 	dotenv.load_dotenv(self.env_file)
 
 
 
@@ -86,6 +85,6 @@ if __name__ == '__main__':
 	print("Adding config as rosparams..")
 	deploy_env.add_vars_to_rosparams()
 	print("success.")
-	print("Setting env vars from .yaml file.. Saving as {} in config/".format(deploy_env.env_file))
-	deploy_env.add_vars_to_environment()
-	print("success.")
+	# print("Setting env vars from .yaml file.. Saving as {} in config/".format(deploy_env.env_file))
+	# deploy_env.add_vars_to_environment()
+	# print("success.")

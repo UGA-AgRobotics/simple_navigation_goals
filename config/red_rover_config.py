@@ -4,7 +4,7 @@ import os
 import rospy
 import sys
 import logging
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from io import StringIO
 from dotenv import dotenv_values
 import yaml
@@ -19,9 +19,10 @@ class DeployEnv(object):
 	Loads environment variables for ROS
 	"""
 
-	def __init__(self, yaml_file=None, json_file=None):
+	def __init__(self, yaml_file=None, env_file=None):
 		self.yaml_file = yaml_file or 'red_rover_config.yaml'  # filename for .yaml environment
 		self.yaml_env = {}  # dict for .yaml environment
+		self.env_file = env_file or '.env'
 
 
 
@@ -35,21 +36,6 @@ class DeployEnv(object):
 			except yaml.YAMLError as e:
 				print("Error reading yaml env var file at config/red_rover_config.py")
 				raise e
-
-
-
-	# def load_json_environment_file(self):
-	# 	"""
-	# 	Same as above load_deployment_environment(), but for json file.
-	# 	Going to use yaml unless objects become an issue (i.e., serializing 
-	# 	list and dicts from yaml file)
-	# 	"""
-	# 	with open(self.json_file, 'r') as stream:
-	# 		try:
-	# 			self.json_env = json.loads(stream.read())
-	# 		except Exception:
-	# 			print("Error loading env vars from .json file: {}".format(self.json_file))
-	# 			raise
 
 
 
@@ -68,20 +54,23 @@ class DeployEnv(object):
 
 
 
-	# def add_vars_to_environment(self):
-	# 	"""
-	# 	Uses dotenv python module to store yaml params in the environment.
-	# 	Using a .yaml instead of .env in case we migrate everything to just using
-	# 	ROS (i.e., all config in rosparam server), so env vars are set
-	# 	using file-likes (https://github.com/theskumar/python-dotenv#in-memory-filelikes)
-	# 	"""
+	def add_vars_to_environment(self):
+		"""
+		Uses dotenv python module to store yaml params in the environment.
+		Using a .yaml instead of .env in case we migrate everything to just using
+		ROS (i.e., all config in rosparam server), so env vars are set
+		using file-likes (https://github.com/theskumar/python-dotenv#in-memory-filelikes)
+		"""
+		# print("Loading env vars from {} to the environment..".format(self.env_file))
+		# dotenv.load_dotenv(dotenv_path='red_rover_config.env')
 
-	# 	for key, val in self.yaml_env.items():
+		# for key, val in self.yaml_env.items():
+		# 	filelike = StringIO("{}={}\n".format(key, val))  # key:val stored in-memory temporarily
+		# 	filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
+		# 	parsed = dotenv_values(stream=filelike)
 
-	# 		filelike = StringIO("{}={}\n".format(key, val))  # key:val stored in-memory temporarily
-	# 		filelike.seek(0)  # set "file's" current position to beginning (rewind before passing)
-	# 		parsed = dotenv_values(stream=filelike)
-			
+		for key, val in self.yaml_env.items():
+			dotenv.set_key(self.env_file, key, val)
 
 
 
@@ -96,6 +85,6 @@ if __name__ == '__main__':
 	print("Adding config as rosparams..")
 	deploy_env.add_vars_to_rosparams()
 	print("success.")
-	# print("Adding config to environment as well..")
-	# deploy_env.add_vars_to_environment()
-	# print("success.")
+	print("Setting env vars from .yaml file.. Saving as {} in config/".format(deploy_env.env_file))
+	deploy_env.add_vars_to_environment()
+	print("success.")

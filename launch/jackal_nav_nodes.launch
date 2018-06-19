@@ -1,11 +1,15 @@
 <?xml version="1.0"?>
 <launch>
 
+
+
 	<arg name="REACH_IP" value="$(optenv REACH_IP 192.168.131.201)" />
 	<arg name="REACH_SERIAL_PORT" value="$(optenv REACH_SERIAL_PORT /dev/ttyACM1)" />
 	<arg name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" />
 	<arg name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
 	<arg name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
+
+
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
 	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen" args="$(arg REACH_IP) 80 $(arg ARDUINO_SERIAL_PORT) $(arg ARDUINO_BAUD)" />
@@ -27,5 +31,7 @@
 
 	<!-- Launches jackal rotation service -->
 	<node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" />
+
+	
 
 </launch>

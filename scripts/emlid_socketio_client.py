@@ -95,12 +95,12 @@ class EmlidSocketIOClient:
 		
 		solution_status = msg.get('solution status')
 
-		print("----");
-		print("Solution Status: " + solution_status);
-		print("Age of Differential (s): " + msg.get('age of differential (s)'));
-		print("AR Validation Ratio: " + msg.get('ratio for ar validation'));
-		print("Baseline (m): " + msg.get('baseline length float (m)'));
-		print("----");
+		#print("----");
+		#print("Solution Status: " + solution_status);
+		#print("Age of Differential (s): " + msg.get('age of differential (s)'));
+		#print("AR Validation Ratio: " + msg.get('ratio for ar validation'));
+		#print("Baseline (m): " + msg.get('baseline length float (m)'));
+		#print("----");
 
 		self.send_status_to_arduino(solution_status)
 

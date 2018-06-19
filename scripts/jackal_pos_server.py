@@ -36,7 +36,7 @@ def pos_callback(data):
 	"""
 	global global_current_position
 	global_current_position = data
-	print "jackal_pos_server: jackal's position: {}".format(global_current_position)
+	#print "jackal_pos_server: jackal's position: {}".format(global_current_position)
 
 
 def handle_pos_request(req):

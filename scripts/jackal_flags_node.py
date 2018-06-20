@@ -77,16 +77,6 @@ class FlagHandler:
 
 			self.flag_index += 1
 
-
-			# if self.flag_index < len(self.flags):
-			# 	self.flag_index += 1  # increment to next flag in list
-			# 	print("Setting flag to next one in list, {}".format(self.flags[self.flag_index]))
-			# else:
-			# 	print(">>> Finished driving to flags list. <<<")
-			# 	print(">>> Continuing the rest of the row <<<")
-			# 	self.flag_publisher.publish(False)
-			# 	self.flag_run_complete = True
-
 		else:
 			self.flag_publisher.publish(False)
 		

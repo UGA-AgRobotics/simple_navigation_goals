@@ -7,7 +7,7 @@ from simple_navigation_goals.srv import *
 import rospy
 from std_msgs.msg import Bool
 import time
-from arduino_controller import ArduinoController
+# from arduino_controller import ArduinoController
 
 
 
@@ -21,9 +21,9 @@ class SampleCollectorSimulator:
 
 		self.collection_delay = 10  # simulated sample collection delay (units: seconds)
 
-		self.arduino_serial_port = rospy.get_param('ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
-		self.arduino_baud = rospy.get_param('ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
-		self.arduino_controller = ArduinoController(self.arduino_serial_port, self.arduino_baud)
+		# self.arduino_serial_port = rospy.get_param('ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
+		# self.arduino_baud = rospy.get_param('ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
+		# self.arduino_controller = ArduinoController(self.arduino_serial_port, self.arduino_baud)
 
 
 		print "Jackal sample collector node ready.."
@@ -43,9 +43,9 @@ class SampleCollectorSimulator:
 			# Collects data with leaf picker and soil sampler:
 			print("Starting sample collection..")
 			print("Delaying {} seconds..".format(self.collection_delay))
-			self.arduino_controller.arduino.write('flag')
+			# self.arduino_controller.arduino.write('flag')
 			time.sleep(self.collection_delay)
-			self.arduino_controller.arduino.write('flagoff')
+			# self.arduino_controller.arduino.write('flagoff')
 			print("Sample collection complete.")
 			return True
 		

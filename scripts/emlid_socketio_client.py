@@ -23,16 +23,10 @@ class EmlidSocketIOClient:
 
 		self.solution_status_publisher = rospy.Publisher("/emlid_solution_status", String, queue_size=1)
 
-
 		self.reach_ip = reach_ip or '192.168.131.201'
 		self.reach_port = reach_port or 80
-		# self.arduino_serial_port = arduino_serial_port or '/dev/ttyACM2'
-		# self.arduino_baud = arduino_baud or 9600
-
-		# self.socketio = SocketIO(self.reach_ip, self.reach_port, LoggingNamespace)
 
 		print("Reach IP: {}, Reach Port: {}".format(self.reach_ip, self.reach_port))
-		# print("Arduino serial path: {}, Arduino baud: {}".format(self.arduino_serial_port, self.arduino_baud))
 
 		self.reach_keys = [
 			'solution status',
@@ -46,14 +40,14 @@ class EmlidSocketIOClient:
 		self.flag_on_signal = 'flag'
 		self.flag_off_signal = 'flagoff'
 
-		# self.arduino_controller = ArduinoController(self.arduino_serial_port, self.arduino_baud)
-
 		# Runs socketio server if not running a test routine:
 		# if test_routine:
 		# 	self.run_light_test()
 		# else:
 		# 	self.connect_to_socketio_server()  # initiate connection to emlid's socketio server
 		# self.connect_to_socketio_server()
+
+		rospy.sleep(1)
 
 		print("Connecting to SocketIO server from Emlid reach unit..")
 
@@ -69,41 +63,7 @@ class EmlidSocketIOClient:
 			print("emlid_socketio_client node ready..")
 
 			# rospy.spin()
-
 			socketIO.wait()
-
-		# print("emlid_socketio_client node ready..")
-
-
-
-	# def run_light_test(self):
-	# 	"""
-	# 	Tests signal lights on arduino for solution status, et al.
-	# 	"""
-	# 	test_messages = self.status_options + [self.off_signal, self.flag_on_signal, self.flag_off_signal]
-	# 	print("Sending the following test messages to arduino test routine: {}".format(test_messages))
-	# 	test_result = self.arduino_controller.simple_arduino_test(test_messages)
-	# 	return test_result
-
-
-
-	# def connect_to_socketio_server(self):
-
-	# 	# self.socketio.on('connect', self.on_connect)
-	# 	# self.socketio.on('disconnect', self.on_disconnect)
-	# 	# self.socketio.on('reconnect', self.on_reconnect)
-	# 	# self.socketio.on('status broadcast', self.on_status_broadcast)
-	# 	# self.socketio.wait()
-
-
-	# 	with SocketIO(self.reach_ip, self.reach_port, LoggingNamespace) as socketIO:
-
-	# 		socketIO.on('connect', self.on_connect)
-	# 		socketIO.on('disconnect', self.on_disconnect)
-	# 		socketIO.on('reconnect', self.on_reconnect)
-	# 		socketIO.on('status broadcast', self.on_status_broadcast)
-
-	# 		socketIO.wait()
 
 
 
@@ -138,17 +98,13 @@ class EmlidSocketIOClient:
 		Sends status ('fix', 'float', 'single', or '-') to arduino for
 		status light indicator circuit.
 		"""
-		# print("status message type: {}".format(type(status)))
-
 		if status in self.status_options:
 			print("Send '{}' message to arduino via {} topic".format(status, '/emlid_solution_status'))
-			# self.arduino.write(str(status))
-			# self.arduino_controller.arduino.write(str(status))
 			self.solution_status_publisher.publish(str(status))
 		else:
 			raise Exception("Status {} not recognized..")
 
-		return True  # success
+		return
 
 
 

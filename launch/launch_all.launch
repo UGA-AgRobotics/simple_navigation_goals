@@ -15,8 +15,8 @@
 
 	<!-- Launches arduino ROS node -->
 	<node pkg="rosserial_python" name="arduino_node" type="serial_node.py" output="screen">
-		<!-- <param name="port" value="$(arg ARDUINO_SERIAL_PORT") /> -->
-		<!-- <param name="baud" value="$(arg ARDUINO_BAUD") /> -->
+		<param name="port" value="$(arg ARDUINO_SERIAL_PORT)" />
+		<param name="baud" value="$(arg ARDUINO_BAUD)" />
 	</node>
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->

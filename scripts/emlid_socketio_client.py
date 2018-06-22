@@ -15,7 +15,7 @@ from requests.exceptions import ConnectionError
 
 class EmlidSocketIOClient:
 
-	def __init__(self, reach_ip=None, reach_port=None, arduino_serial_port=None, arduino_baud=None, test_routine=False):
+	def __init__(self, reach_ip=None, reach_port=None, test_routine=False):
 
 		print("Starting emlid_socketio_client node..")
 
@@ -116,14 +116,14 @@ if __name__ == '__main__':
 
 	_reach_ip = None
 	_reach_port = None
-	_arduino_serial_port = None
-	_arduino_baud = None
+	# _arduino_serial_port = None
+	# _arduino_baud = None
 
 	try:
 		_reach_ip = sys.argv[1]
 		_reach_port = sys.argv[2]
-		_arduino_serial_port = sys.argv[3]
-		_arduino_baud = sys.argv[4]
+		# _arduino_serial_port = sys.argv[3]
+		# _arduino_baud = sys.argv[4]
 
 	except IndexError:
 		print("No inputs provided for reach ip or reach port, so using defaults..")
@@ -131,11 +131,11 @@ if __name__ == '__main__':
 
 		_reach_ip = rospy.get_param('REACH_IP', '192.168.131.201')  # IP address of Reach unit on RoverNet
 		_reach_port = rospy.get_param('REACH_PORT', 80)  # connect to Reach HTTP port
-		_arduino_serial_port = rospy.get_param('ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
-		_arduino_baud = rospy.get_param('ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
+		# _arduino_serial_port = rospy.get_param('ARDUINO_SERIAL_PORT', '/dev/ttyACM2')  # tty port for Arduino
+		# _arduino_baud = rospy.get_param('ARDUINO_BAUD', 9600)  # baud rate for arduino serial communication
 
 	try:
 		# Starts Emlid Reach RS SocketIO Client:
-		emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port, _arduino_serial_port, _arduino_baud)
+		emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)
 	except rospy.ROSInterruptException:
 		raise

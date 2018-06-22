@@ -117,12 +117,16 @@ class FlagHandler:
 		# anonymous=True flag means that rospy will choose a unique
 		# name for our 'listener' node so that multiple listeners can
 		# run simultaneously.
+
+		print("Initializing jackal_flags_node..")
 		
 		rospy.init_node('flag_node', anonymous=True)
 
 		rospy.Subscriber("/fix", NavSatFix, self.position_callback, queue_size=1)
 
 		rospy.Subscriber('/sample_collected', Bool, self.sample_callback, queue_size=1)  # indicates to rover sample is collected, drive to next flag
+
+		print("jackal_flags_node ready.")
 
 		# spin() simply keeps python from exiting until this node is stopped
 		rospy.spin()

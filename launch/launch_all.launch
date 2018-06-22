@@ -3,12 +3,12 @@
 
 	<!-- <rosparam command="load" file="$(find simple_navigation_goals)/config/red_rover_config.yaml" /> -->
 
-	<arg name="REACH_IP" value="$(optenv REACH_IP 192.168.131.201)" />
-	<arg name="REACH_SERIAL_PORT" value="$(optenv REACH_SERIAL_PORT /dev/ttyACM1)" />
-	<arg name="REACH_BAUD" value="$(optenv REACH_BAUD 9600)" />
+	<arg name="REACH_IP" value="$(env REACH_IP)" />
+	<arg name="REACH_SERIAL_PORT" value="$(env REACH_SERIAL_PORT)" />
+	<arg name="REACH_BAUD" value="$(env REACH_BAUD)" />
 	<arg name="REACH_HTTP_PORT" value="$(optenv REACH_HTTP_PORT 80)" />
-	<arg name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
-	<arg name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
+	<arg name="ARDUINO_SERIAL_PORT" value="$(env ARDUINO_SERIAL_PORT)" />
+	<arg name="ARDUINO_BAUD" value="$(env ARDUINO_BAUD)" />
 	<arg name="FLAG_FILE" value="$(env FLAG_FILE)" />
 
 

@@ -14,10 +14,10 @@
 
 
 	<!-- Launches arduino ROS node -->
-	<node pkg="rosserial_python" name="arduino_node" type="serial_node.py" output="screen">
-		<param name="port" value="$(arg ARDUINO_SERIAL_PORT)" />
-		<param name="baud" value="$(arg ARDUINO_BAUD)" />
-	</node>
+	<!-- <node pkg="rosserial_python" name="arduino_node" type="serial_node.py" output="screen"> -->
+		<!-- <param name="port" value="$(arg ARDUINO_SERIAL_PORT)" /> -->
+		<!-- <param name="baud" value="$(arg ARDUINO_BAUD)" /> -->
+	<!-- </node> -->
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->
 	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen" args="$(arg REACH_IP) $(arg REACH_HTTP_PORT)" />
@@ -41,7 +41,7 @@
 	<node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" />
 
 	<!-- Launches jackal_flags_node.py -->
-	<node pkg="simple_navigation_goals" name="jackal_flags_node" type="jackal_flags_node.py" output="screen" args="$(arg FLAG_FILE)" />	
+	<!-- <node pkg="simple_navigation_goals" name="jackal_flags_node" type="jackal_flags_node.py" output="screen" args="$(arg FLAG_FILE)" />	 -->
 
 	
 

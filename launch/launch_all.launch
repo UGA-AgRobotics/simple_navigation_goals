@@ -10,14 +10,13 @@
 	<arg name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
 	<arg name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
 	<arg name="FLAG_FILE" value="$(env FLAG_FILE)" />
-	<!--<arg name="PATH_FILE" value="$(env PATH_FILE)" />-->
 
 
 
 	<!-- Launches arduino ROS node -->
 	<node pkg="rosserial_python" name="arduino_node" type="serial_node.py" output="screen">
-		<param name="port" value="$(arg ARDUINO_SERIAL_PORT") />
-		<param name="baud" value="$(arg ARDUINO_BAUD") />
+		<!-- <param name="port" value="$(arg ARDUINO_SERIAL_PORT") /> -->
+		<!-- <param name="baud" value="$(arg ARDUINO_BAUD") /> -->
 	</node>
 
 	<!-- Launches emlid_socketio_client.py file TODO: Convert to ROS service or node -->

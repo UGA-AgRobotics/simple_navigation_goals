@@ -27,8 +27,8 @@ class FlagHandler:
 
 	def __init__(self, flags=None):
 
-		self.flag_publisher = rospy.Publisher('at_flag', Bool, queue_size=1)
-		self.flag_tolerance = 0.4  # distance to flag to consider being at said flag (units: meters)
+		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
+		self.flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 
@@ -38,6 +38,7 @@ class FlagHandler:
 			raise Exception("Must project jackal_flags_node with flags file")
 
 		print("Flags list: {}".format(self.flags))
+		print("Flag tolerance: {}".format(self.flag_tolerance))
 
 
 	def get_utm_from_fix(self, current_fix):

@@ -40,7 +40,7 @@ def pos_callback(data):
 
 
 def handle_pos_request(req):
-	print "Incoming drive request: {}".format(req)
+	# print "Incoming drive request: {}".format(req)
 	global global_current_position
 	return JackalPosResponse(global_current_position)  # Return current position of Jackal..
 

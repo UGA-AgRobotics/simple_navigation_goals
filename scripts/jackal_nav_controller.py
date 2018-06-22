@@ -33,10 +33,9 @@ class NavController:
 
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 
-		self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
+		# self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
 
 		rospy.wait_for_service('start_sample_collection')
-
 		self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
 
 		self.at_flag = False
@@ -53,12 +52,12 @@ class NavController:
 		if flag_msg.data == True or flag_msg == True:
 			print("Stopping cause we're at the flag!!!")
 			self.at_flag = True  # sets main at_flag to True for robot..
-			# print("Calling sample collector service to initiate data collection while robot is stopped..")
-			# sample_collector_result = self.call_sample_collector_service('collect')
-			# print("Sample collected: {}".format(sample_collector_result))
-			# self.at_flag = False
-		else:
-			self.sample_publisher.publish(False)
+		# 	print("Calling sample collector service to initiate data collection while robot is stopped..")
+		# 	sample_collector_result = self.call_sample_collector_service('collect')
+		# 	print("Sample collected: {}".format(sample_collector_result))
+		# 	self.at_flag = False
+		# else:
+		# 	# self.sample_publisher.publish(False)
 
 
 

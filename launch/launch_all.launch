@@ -10,7 +10,7 @@
 	<arg name="ARDUINO_SERIAL_PORT" value="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM2)" />
 	<arg name="ARDUINO_BAUD" value="$(optenv ARDUINO_BAUD 9600)" />
 	<arg name="FLAG_FILE" value="$(env FLAG_FILE)" />
-	<arg name="PATH_FILE" value="$(env PATH_FILE)" />
+	<!--<arg name="PATH_FILE" value="$(env PATH_FILE)" />-->
 
 
 
@@ -42,7 +42,7 @@
 	<node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" />
 
 	<!-- Launches jackal_flags_node.py -->
-	<node pkg="simple_navigation_goals" name="jackal_flags_node" type="jackal_flags_node.py" output="screen" args="" />	
+	<node pkg="simple_navigation_goals" name="jackal_flags_node" type="jackal_flags_node.py" output="screen" args="$(arg FLAG_FILE)" />	
 
 	
 

@@ -143,10 +143,14 @@ if __name__ == '__main__':
 
 	_flag_filename = None  # input arg for filename of flags file
 
-	try:
-		_flag_filename = sys.argv[1]
-	except IndexError:
-		raise Exception("Must provide a flag filename when running this node..")
+	#try:
+	#	_flag_filename = sys.argv[1]
+	#except IndexError:
+	#	raise Exception("Must provide a flag filename when running this node..")
+
+	#_flag_filename = rospy.get_param('FLAG_FILE')
+	_flag_filename = sys.argv[1]
+
 
 	# Reads in flags file:
 	fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler

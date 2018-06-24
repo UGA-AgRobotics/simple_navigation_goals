@@ -4,6 +4,8 @@ import roslib
 import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
 from std_msgs.msg import Bool
+from std_msgs.msg import String
+from std_msgs.msg import Float64
 from simple_navigation_goals.srv import *
 import tf
 from math import radians, copysign, sqrt, pow, pi, degrees
@@ -28,10 +30,22 @@ class NavController:
 
 	def __init__(self):
 
-		rospy.Subscriber("at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
+		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		# rospy.Subscriber("sample_collected", Bool, self.sample_collected_callback)
+		# rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
+
+
+
+
+		rospy.Subscriber("/rover_turn", Float64, self.rover_turn_callback)
+
+
+
+
 
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
+
+		self.move_cmd = Twist()
 
 		# self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
 
@@ -39,6 +53,7 @@ class NavController:
 		self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
 
 		self.at_flag = False
+		self.emergency_stop = False
 
 
 
@@ -52,18 +67,50 @@ class NavController:
 		if flag_msg.data == True or flag_msg == True:
 			print("Stopping cause we're at the flag!!!")
 			self.at_flag = True  # sets main at_flag to True for robot..
-		# 	print("Calling sample collector service to initiate data collection while robot is stopped..")
-		# 	sample_collector_result = self.call_sample_collector_service('collect')
-		# 	print("Sample collected: {}".format(sample_collector_result))
-		# 	self.at_flag = False
-		# else:
-		# 	# self.sample_publisher.publish(False)
 
 
 
-	# def call_sample_collector_service(self, msg):
-		
-	# 	return start_sample_collection('collect')
+	# def rf_stop_callback(self, stop_msg):
+	# 	"""
+	# 	/rf_stop is an emergency stop from the arduino, which uses a 
+	# 	32197-MI 4 Ch. remote control receiver
+	# 	"""
+	# 	print("Received RF stop message! {}".format(stop_msg))
+	# 	if stop_msg.data == True:
+	# 		self.emergency_stop = True
+	# 	else:
+	# 		self.emergency_stop = False
+
+
+
+	def rover_turn_callback(self, turn_msg):
+		"""
+		turn_msg - Int32
+		"""
+		print("Received turn message! {}".format(turn_msg))
+		self.execute_turn(turn_msg.data)
+
+
+
+	def continuous_drive(self, goal_distance, look_ahead):
+		"""
+		This function will replace drive_forward below. It'll keep the rover
+		driving continuously. Not sure if goal_distance or look_ahead will
+		be needed here, might end up moving them to the turning function.
+		"""
+		move_cmd.linear.x = linear_speed
+
+		while not self.emergency_stop and not rospy.is_shutdown():
+
+			self.cmd_vel.publish(move_cmd)
+			rospy.sleep(1.0/rate)
+
+
+
+
+
+
+
 
 
 
@@ -82,7 +129,9 @@ class NavController:
 		# Enter the loop to move along a side
 		while distance < (goal_distance - look_ahead) and not self.at_flag and not rospy.is_shutdown():
 
-			print("Inside drive routine, at_flag: {}".format(self.at_flag))
+			while self.emergency_stop:
+				print(">>> Emergency RF stop!")
+				pass
 
 			# Publishes the Twist message and sleep 1 cycle         
 			self.cmd_vel.publish(move_cmd)
@@ -125,8 +174,12 @@ class NavController:
 
 		# Begin the rotation
 		while abs(turn_angle + angular_tolerance) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
+
+			# while self.emergency_stop:
+			# 	print(">>> Emergency RF stop!")
+			# 	pass
 			
-			print("Inside turn routine, at_flag: {}".format(self.at_flag))			
+			# print("Inside turn routine, at_flag: {}".format(self.at_flag))	
 
 			# Publishes the Twist message and sleep 1 cycle:
 			self.cmd_vel.publish(move_cmd)

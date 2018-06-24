@@ -16,6 +16,7 @@ import roslib
 import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
 from std_msgs.msg import Bool
+from std_msgs.msg import Float64
 from simple_navigation_goals.srv import *
 import tf
 import math
@@ -61,6 +62,9 @@ class SingleGoalNav():
 		
 		# Publisher to control the robot's speed
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist)
+
+		# Publisher to jackal_nav_controller.py module
+		self.turn_pub = rospy.Publisher('/rover_turn', Float64)
 		 
 		# The base frame is base_footprint for the TurtleBot but base_link for Pi Robot
 		self.base_frame = rospy.get_param('~base_frame', '/base_link')
@@ -94,7 +98,7 @@ class SingleGoalNav():
 
 
 		position = Point()  # initialize the position variable as a Point type
-		move_cmd = Twist()  # initialize movement comment
+		self.move_cmd = Twist()  # initialize movement comment
 
 		# move_cmd.linear.x = linear_speed  # set movement command to forward motion
 
@@ -144,6 +148,13 @@ class SingleGoalNav():
 		print("Initial target goal index: {}".format(target_index))
 
 
+
+
+		self.move_cmd.linear.x = 0.2
+
+
+
+
 		# Loop track goals here for each A->B in the course:
 		for i in range(target_index, len(_track) - 1):
 
@@ -181,8 +192,9 @@ class SingleGoalNav():
 				continue  # skip to next iteration in track for loop
 
 
-			
-			self.p2p_drive_routine(current_goal)  # main drive routine
+
+			# self.p2p_drive_routine(current_goal)  # main drive routine
+			self.p2p_continuous_test(current_goal)
 
 
 
@@ -208,38 +220,91 @@ class SingleGoalNav():
 
 
 
-	def p2p_drive_routine(self, goal_pos):
-		"""
-		The drive routine from point-to-point, whether that's b/w
-		two GPS points on the course, or a step size incrementing a drive
-		between two GPS points.
-		"""
+	def p2p_continuous_test(self, goal_pos, look_ahead=1.0, rate=20.0):
+
 		(position, rotation) = self.get_odom()  # get starting position values
 		curr_pose_utm = self.get_current_position()
-
-		print("Jackal's position in UTM: {}".format(curr_pose_utm))
-
 		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
 		B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
+
+		distance = 0
+		goal_distance = self.determine_drive_distance(A, B)
+		x_start, y_start = position.x, position.y
+
+
+		# Enter the loop to move along a side
+		while distance < (goal_distance - look_ahead) and not self.at_flag and not rospy.is_shutdown():
+
+			# Publishes the Twist message and sleep 1 cycle         
+			self.cmd_vel.publish(self.move_cmd)
+			rospy.sleep(1.0/rate)
+
+			(position, rotation) =  self.get_odom()  # Get the current position
+			
+			# Compute the Euclidean distance from the start
+			distance = sqrt(pow((position.x - x_start), 2) + 
+							pow((position.y - y_start), 2))
+
+		# Check to see if robot is at flag
+		if self.at_flag:
+			print("Calling sample collector service to initiate data collection while robot is stopped..")
+			sample_collector_result = self.start_sample_collection('collect')
+			print("Sample collected: {}".format(sample_collector_result))
+			self.at_flag = False
+
+
+
 		
 		turn_angle = self.initiate_angle_transform(A, B)
 
 		if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			# self.call_jackal_rot_service(turn_angle)
-			# jackal_nav_controller.execute_turn(radians(turn_angle))
-			self.nav_controller.execute_turn(radians(turn_angle))
-			print("Finished turning..")
+			self.turn_pub.publish(radians(turn_angle))
 
-		drive_distance = self.determine_drive_distance(A, B)
+		# drive_distance = self.determine_drive_distance(A, B)
 
-		if drive_distance > 0:
-			print("Driving Jackal {} meters..".format(drive_distance))
-			# self.get_jackal_pos_from_service(drive_distance)
-			# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
-			self.nav_controller.drive_forward(drive_distance, self.look_ahead)
-			print("Finished driving..")
+		# if drive_distance > 0:
+		# 	print("Driving Jackal {} meters..".format(drive_distance))
+		# 	# self.get_jackal_pos_from_service(drive_distance)
+		# 	# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
+		# 	self.nav_controller.drive_forward(drive_distance, self.look_ahead)
+		# 	print("Finished driving..")
+
+
+
+	# def p2p_drive_routine(self, goal_pos):
+	# 	"""
+	# 	The drive routine from point-to-point, whether that's b/w
+	# 	two GPS points on the course, or a step size incrementing a drive
+	# 	between two GPS points.
+	# 	"""
+	# 	(position, rotation) = self.get_odom()  # get starting position values
+	# 	curr_pose_utm = self.get_current_position()
+
+	# 	print("Jackal's position in UTM: {}".format(curr_pose_utm))
+
+	# 	A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
+	# 	B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
+		
+	# 	turn_angle = self.initiate_angle_transform(A, B)
+
+	# 	if turn_angle != 0:
+	# 		# Determine angle to turn based on IMU..
+	# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))
+	# 		# self.call_jackal_rot_service(turn_angle)
+	# 		# jackal_nav_controller.execute_turn(radians(turn_angle))
+	# 		self.nav_controller.execute_turn(radians(turn_angle))
+	# 		print("Finished turning..")
+
+	# 	drive_distance = self.determine_drive_distance(A, B)
+
+	# 	if drive_distance > 0:
+	# 		print("Driving Jackal {} meters..".format(drive_distance))
+	# 		# self.get_jackal_pos_from_service(drive_distance)
+	# 		# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
+	# 		self.nav_controller.drive_forward(drive_distance, self.look_ahead)
+	# 		print("Finished driving..")
 
 
 

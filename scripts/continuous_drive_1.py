@@ -30,7 +30,6 @@ import dubins
 
 # Local package requirements:
 from nav_tracks import NavTracks
-# import jackal_nav_controller  # handles drive and turn routines
 from jackal_nav_controller import NavController
 
 
@@ -65,6 +64,21 @@ class SingleGoalNav():
 
 		# Publisher to jackal_nav_controller.py module
 		self.turn_pub = rospy.Publisher('/rover_turn', Float64)
+
+		self.drive_pub = rospy.Publisher('/start_driving', Bool)
+
+
+		print("Waiting for get_jackal_pos service..")
+		rospy.wait_for_service('get_jackal_pos')
+		self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
+		print("get_jackal_pos service ready.")
+
+
+		print("Waiting for get_jackal_rot service..")
+		rospy.wait_for_service('get_jackal_rot')
+		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+		print("get_jackal_rot service ready.")
+
 		 
 		# The base frame is base_footprint for the TurtleBot but base_link for Pi Robot
 		self.base_frame = rospy.get_param('~base_frame', '/base_link')
@@ -150,8 +164,11 @@ class SingleGoalNav():
 
 
 
-		self.move_cmd.linear.x = 0.2
+		# self.move_cmd.linear.x = 0.2
 
+
+		print("Starting drive_node.py..")
+		self.drive_pub.publish(True)
 
 
 
@@ -168,6 +185,7 @@ class SingleGoalNav():
 				print("Current goal is the last one in the course!")
 				print("End at the same orientation as the last goal..")
 				pass  # continue on..
+
 			goal_orientation = self.determine_angle_at_goal(current_goal, future_goal)
 
 			curr_pose_utm = self.get_current_position()
@@ -222,10 +240,20 @@ class SingleGoalNav():
 
 	def p2p_continuous_test(self, goal_pos, look_ahead=1.0, rate=20.0):
 
-		(position, rotation) = self.get_odom()  # get starting position values
+		# (position, rotation) = self.get_odom()  # get starting position values
+		curr_rot = self.get_jackal_rot()  # returns jackal_rot msg of angle in radians
 		curr_pose_utm = self.get_current_position()
-		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-		B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
+		# A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
+		A = (curr_pose_utm[0], curr_pose_utm[1], self.quat_to_angle(curr_rot.jackal_rot))
+		B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
+
+		
+
+		
+
+
+
+
 
 		distance = 0
 		goal_distance = self.determine_drive_distance(A, B)
@@ -332,7 +360,8 @@ class SingleGoalNav():
 
 
 	def get_current_position(self):
-		curr_pose = self.get_jackal_pos_from_service()  # don't drive, just get current lat/lon
+		# curr_pose = self.get_jackal_pos_from_service()  # don't drive, just get current lat/lon
+		curr_pose = self.get_jackal_pos()
 		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
 		return curr_pose_utm
 
@@ -512,33 +541,8 @@ class SingleGoalNav():
 		Always stop the robot when shutting down the node
 		"""
 		rospy.loginfo(">>>>> Stopping the robot by publishing blank Twist to jackal_nav_controller..")
-		# jackal_nav_controller.cmd_vel.publish(Twist())  # stop that robot!
 		self.nav_controller.cmd_vel.publish(Twist())
 		rospy.sleep(1)
-
-
-	def get_jackal_pos_from_service(self):
-		"""
-		Get current GPS fix from Jackal's position
-		"""
-		rospy.wait_for_service('get_jackal_pos')
-		get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-		return get_jackal_pos()
-
-
-
-	# def flag_callback(self, at_flag):
-	# 	"""
-	# 	Subscribes to /at_flag topic that's being published by
-	# 	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
-	# 	"""
-	# 	print("At flag?: {}".format(at_flag.data))
-
-	# 	if at_flag.data == True or at_flag == True:
-	# 		print("Shutting down Jackal cause we're at the flag!!!")
-	# 		self.at_flag = True  # sets main at_flag to True for robot..
-	# 		# self.shutdown()
-	# 		# return
 
 
 
@@ -556,7 +560,6 @@ if __name__ == '__main__':
 
 	try:
 		SingleGoalNav(course)
-		# SingleGoalNav()
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")
 		rospy.loginfo("Shutting down drive node!")

@@ -5,8 +5,8 @@ import rospy
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Twist, Point, Quaternion
 import tf
-import PyKDL
-from math import degrees, radians, pi
+# import PyKDL
+# from math import degrees, radians, pi
 
 
 
@@ -15,14 +15,14 @@ global_current_orientation = None
 
 
 
-def rot_callback_imu(data):
+def rot_callback_imu(rot_msg):
 	"""
 	Position callback, which is executed in the event that a GPS fix is
 	published by the Jackal.
 	"""
 	global global_current_orientation
-	global_current_orientation = quat_to_angle(data.orientation)
-	#print "Jackal's angle: {}".format(degrees(global_current_orientation))
+	# global_current_orientation = quat_to_angle(rot_msg.orientation)
+	global_current_orientation = rot_msg
 
 
 
@@ -36,12 +36,12 @@ def handle_rot_request(req):
 
 
 
-def quat_to_angle(quat):
-	"""
-	Converts quaternion to angle.
-	"""
-	rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
-	return rot.GetRPY()[2]
+# def quat_to_angle(quat):
+# 	"""
+# 	Converts quaternion to angle.
+# 	"""
+# 	rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
+# 	return rot.GetRPY()[2]
 
 
 

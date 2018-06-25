@@ -164,11 +164,9 @@ class SingleGoalNav():
 
 
 
-		# self.move_cmd.linear.x = 0.2
-
-
 		print("Starting drive_node.py..")
 		self.drive_pub.publish(True)
+
 
 
 
@@ -301,38 +299,38 @@ class SingleGoalNav():
 
 
 
-	# def p2p_drive_routine(self, goal_pos):
-	# 	"""
-	# 	The drive routine from point-to-point, whether that's b/w
-	# 	two GPS points on the course, or a step size incrementing a drive
-	# 	between two GPS points.
-	# 	"""
-	# 	(position, rotation) = self.get_odom()  # get starting position values
-	# 	curr_pose_utm = self.get_current_position()
+	def p2p_drive_routine(self, goal_pos):
+		"""
+		The drive routine from point-to-point, whether that's b/w
+		two GPS points on the course, or a step size incrementing a drive
+		between two GPS points.
+		"""
+		(position, rotation) = self.get_odom()  # get starting position values
+		curr_pose_utm = self.get_current_position()
 
-	# 	print("Jackal's position in UTM: {}".format(curr_pose_utm))
+		print("Jackal's position in UTM: {}".format(curr_pose_utm))
 
-	# 	A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
-	# 	B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
+		A = (curr_pose_utm[0], curr_pose_utm[1], rotation)
+		B = (goal_pos[0], goal_pos[1], rotation)  # NOTE: B's orientation currently hardcoded for testing..
 		
-	# 	turn_angle = self.initiate_angle_transform(A, B)
+		turn_angle = self.initiate_angle_transform(A, B)
 
-	# 	if turn_angle != 0:
-	# 		# Determine angle to turn based on IMU..
-	# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))
-	# 		# self.call_jackal_rot_service(turn_angle)
-	# 		# jackal_nav_controller.execute_turn(radians(turn_angle))
-	# 		self.nav_controller.execute_turn(radians(turn_angle))
-	# 		print("Finished turning..")
+		if turn_angle != 0:
+			# Determine angle to turn based on IMU..
+			print("Telling Jackal to turn {} degreess..".format(turn_angle))
+			# self.call_jackal_rot_service(turn_angle)
+			# jackal_nav_controller.execute_turn(radians(turn_angle))
+			self.nav_controller.execute_turn(radians(turn_angle))
+			print("Finished turning..")
 
-	# 	drive_distance = self.determine_drive_distance(A, B)
+		drive_distance = self.determine_drive_distance(A, B)
 
-	# 	if drive_distance > 0:
-	# 		print("Driving Jackal {} meters..".format(drive_distance))
-	# 		# self.get_jackal_pos_from_service(drive_distance)
-	# 		# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
-	# 		self.nav_controller.drive_forward(drive_distance, self.look_ahead)
-	# 		print("Finished driving..")
+		if drive_distance > 0:
+			print("Driving Jackal {} meters..".format(drive_distance))
+			# self.get_jackal_pos_from_service(drive_distance)
+			# jackal_nav_controller.drive_forward(drive_distance, self.look_ahead)
+			self.nav_controller.drive_forward(drive_distance, self.look_ahead)
+			print("Finished driving..")
 
 
 

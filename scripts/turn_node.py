@@ -28,30 +28,38 @@ class TurnNode:
 
 	def __init__(self):
 
+		print("Starting turn_node..")
+
+		rospy.init_node('turn_node', anonymous=True)
+
 		# Publishers:
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 
 		# Subscribers:
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
-		# rospy.Subscriber("/rover_turn", Float64, self.rover_turn_callback)
+		rospy.Subscriber("/rover_turn", Float64, self.rover_turn_callback, queue_size=1)
 
 		# rospy.wait_for_service('start_sample_collection')
 		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
 
-		# self.at_flag = False
+		self.at_flag = False
 		self.emergency_stop = False
 
+		print("turn_node ready.")
+
+		rospy.spin()
 
 
-	# def flag_callback(self, flag_msg):
-	# 	"""
-	# 	Subscribes to /at_flag topic that's being published by
-	# 	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
-	# 	"""
-	# 	if flag_msg.data == True or flag_msg == True:
-	# 		print("Stopping cause we're at the flag!!!")
-	# 		self.at_flag = True  # sets main at_flag to True for robot..
+
+	def flag_callback(self, flag_msg):
+		"""
+		Subscribes to /at_flag topic that's being published by
+		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+		"""
+		if flag_msg.data == True or flag_msg == True:
+			print("Stopping cause we're at the flag!!!")
+			self.at_flag = True  # sets main at_flag to True for robot..
 
 
 
@@ -96,8 +104,8 @@ class TurnNode:
 		# Begin the rotation
 		while abs(turn_angle + angular_tolerance) < abs(goal_angle) and not rospy.is_shutdown():
 
-			while self.emergency_stop:
-				print(">>> Emergency RF stop! <<<")
+			# while self.emergency_stop:
+			# 	print(">>> Emergency RF stop! <<<")
 
 			# Publishes the Twist message and sleep 1 cycle:
 			self.cmd_vel.publish(move_cmd)
@@ -143,3 +151,16 @@ class TurnNode:
 		while res < -pi:
 			res += 2.0 * pi
 		return res
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+	try:
+		TurnNode()
+	except rospy.ROSInterruptException:
+		raise

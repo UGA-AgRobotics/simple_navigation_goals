@@ -39,6 +39,7 @@ class FlagHandler:
 
 		print("Flags list: {}".format(self.flags))
 		print("Flag tolerance: {}".format(self.flag_tolerance))
+		
 
 
 	def get_utm_from_fix(self, current_fix):

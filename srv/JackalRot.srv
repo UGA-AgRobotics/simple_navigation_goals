@@ -1,2 +1,2 @@
 ---
-sensor_msgs/Imu jackal_rot
+float64 jackal_rot

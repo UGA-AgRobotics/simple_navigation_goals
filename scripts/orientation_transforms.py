@@ -24,29 +24,6 @@ def determine_angle_at_goal(goal, future_goal):
 
 
 
-def initiate_angle_transform(A, B):
-	"""
-	Transforms angle between the IMU frame (magnetic North) and
-	the Jackal's frame. Takes in angle from IMU, then determines
-	an angle and turn direction for the Jackal to execute.
-	"""
-	x_diff = B[0] - A[0]
-	y_diff = B[1] - A[1]
-
-	_trans_angle = transform_imu_frame(degrees(A[2]))
-	AB_theta0 = atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
-	AB_angle = transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
-
-	turn_angle = None
-	if AB_angle == 0:
-		turn_angle = 0
-	else:
-		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
-
-	return turn_angle  # return angle to turn relative to jackal's current orientation
-
-
-
 def transform_angle_by_quadrant(initial_angle, x_diff, y_diff):
 	"""
 	Takes the change in X and Y to determine how the Jackal
@@ -72,7 +49,7 @@ def transform_angle_by_quadrant(initial_angle, x_diff, y_diff):
 		# No change in angle..
 		return 0.0
 	else:
-		raise Exception("!Error occurred in basic_drive_3/transform_angle_by_quadrant func..")
+		raise
 
 
 
@@ -87,3 +64,26 @@ def transform_imu_frame(theta0):
 		_trans = 360 + _trans  # transform angle to 0->360 if in -180->0 quadrants
 
 	return _trans
+
+
+
+def initiate_angle_transform(A, B):
+	"""
+	Transforms angle between the IMU frame (magnetic North) and
+	the Jackal's frame. Takes in angle from IMU, then determines
+	an angle and turn direction for the Jackal to execute.
+	"""
+	x_diff = B[0] - A[0]
+	y_diff = B[1] - A[1]
+
+	_trans_angle = transform_imu_frame(degrees(A[2]))
+	AB_theta0 = atan2(abs(y_diff), abs(x_diff))  # get intitial angle, pre transform
+	AB_angle = transform_angle_by_quadrant(AB_theta0, x_diff, y_diff)  # determine angle between vector A and B
+
+	turn_angle = None
+	if AB_angle == 0:
+		turn_angle = 0
+	else:
+		turn_angle = AB_angle - _trans_angle  # angle to turn (signage should denote direction to turn)
+
+	return turn_angle  # return angle to turn relative to jackal's current orientation

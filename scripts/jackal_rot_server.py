@@ -3,15 +3,12 @@
 from simple_navigation_goals.srv import *
 import rospy
 from sensor_msgs.msg import Imu
-from geometry_msgs.msg import Twist, Point, Quaternion
-import tf
-# import PyKDL
-# from math import degrees, radians, pi
+from geometry_msgs.msg import Quaternion
+import PyKDL
 
 
 
 global_current_orientation = None
-
 
 
 
@@ -21,27 +18,26 @@ def rot_callback_imu(rot_msg):
 	published by the Jackal.
 	"""
 	global global_current_orientation
-	# global_current_orientation = quat_to_angle(rot_msg.orientation)
 	global_current_orientation = rot_msg
 
 
 
 def handle_rot_request(req):
 
-	print "Handling request to get Jackal's current orientation.."
-	print "Incoming request to be handled: {}".format(req)
+	print("Handling request to get Jackal's current orientation..")
 
 	global global_current_orientation
-	return JackalRotResponse(global_current_orientation)
+	# return JackalRotResponse(global_current_orientation)
+	return JackalRotResponse(quat_to_angle(global_current_orientation))
 
 
 
-# def quat_to_angle(quat):
-# 	"""
-# 	Converts quaternion to angle.
-# 	"""
-# 	rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
-# 	return rot.GetRPY()[2]
+def quat_to_angle(quat):
+	"""
+	Converts quaternion to angle.
+	"""
+	rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
+	return rot.GetRPY()[2]
 
 
 
@@ -50,8 +46,8 @@ def get_jackal_rot_server():
 	rospy.init_node('get_jackal_rot_server')
 	s = rospy.Service('get_jackal_rot', JackalRot, handle_rot_request)
 	rospy.Subscriber('/phidget/imu/data', Imu, rot_callback_imu, queue_size=1)
-	print "get_jackal_rot_server subscribed to /imu/data from Jackal.."
-	print "Jackal rot server ready.."
+	print("get_jackal_rot_server subscribed to /imu/data from Jackal..")
+	print("Jackal rot server ready..")
 	rospy.spin()
 
 

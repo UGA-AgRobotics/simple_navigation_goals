@@ -185,15 +185,17 @@ class SingleGoalNav():
 		# 0 +/- angle_tolerance, then don't turn the rover!
 		##########################################################################
 		turn_angle = orientation_transforms.initiate_angle_transform(A, B)
-		# if turn_angle != 0:
+
+		print("Turn angle, pre-tolerance filter: {}".format(turn_angle))
 
 		if abs(turn_angle) > abs(self.angle_tolerance):
+		# if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
 			self.nav_controller.execute_turn(radians(turn_angle))
 			print("Finished turn.")
 		else:
-			print("turn_angle not greater than angle tolerance, continuing straight..")
+			print(">>> turn_angle not greater than angle tolerance, continuing straight..")
 		##########################################################################
 
 		drive_distance = self.determine_drive_distance(A, B)

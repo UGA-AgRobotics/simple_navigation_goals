@@ -51,23 +51,26 @@ class SingleGoalNav():
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(rate)
 
-		self.at_flag = False  # keeps track of if robot is at a flag or not
-
 		self.nav_controller = NavController()  # module that handles driving and turning routines
+
+
+		self.angle_tolerance = 2.0  # angle tolerance in degrees
+
+
 		
 		# Publisher to control the robot's speed
 		# self.cmd_vel = rospy.Publisher('/cmd_vel', Twist)
 
-		print("Waiting for get_jackal_pos service..")
-		rospy.wait_for_service('get_jackal_pos')
-		self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-		print("get_jackal_pos service ready.")
+		# print("Waiting for get_jackal_pos service..")
+		# rospy.wait_for_service('get_jackal_pos')
+		# self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
+		# print("get_jackal_pos service ready.")
 
 
-		print("Waiting for get_jackal_rot service..")
-		rospy.wait_for_service('get_jackal_rot')
-		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		print("get_jackal_rot service ready.")
+		# print("Waiting for get_jackal_rot service..")
+		# rospy.wait_for_service('get_jackal_rot')
+		# self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+		# print("get_jackal_rot service ready.")
 
 
 		# Gets track to follow:
@@ -90,10 +93,10 @@ class SingleGoalNav():
 		######################################################################
 
 
-		# Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
-		print("Starting driving routine.")
+		# # Sleep routine for testing:
+		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		# rospy.sleep(10)
+		# print("Starting driving routine.")
 
 
 		# Initial GPS position:
@@ -121,7 +124,7 @@ class SingleGoalNav():
 
 
 			curr_pose_utm = self.nav_controller.get_current_position()  # returns NavSatFix type of position
-			curr_angle = self.nav_controller.get_jackal_rot()  # returns float64 of angle in radians, i think
+			curr_angle = self.nav_controller.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
 
 			print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
 			print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
@@ -141,7 +144,7 @@ class SingleGoalNav():
 				print("Within look-ahead of goal, so skipping to next goal")
 				continue  # skip to next iteration in track for loop
 
-			
+			current_goal = B  # TODO: organize this..
 			self.p2p_drive_routine(current_goal)  # main drive routine
 
 
@@ -169,9 +172,11 @@ class SingleGoalNav():
 		between two GPS points.
 		"""
 		curr_pose_utm = self.nav_controller.get_current_position()
-		curr_angle = self.nav_controller.get_jackal_rot()
+		curr_angle = self.nav_controller.get_jackal_rot().jackal_rot
 
 		print("Jackal's position in UTM: {}, Jackal's angle: rad-{}, deg-{}".format(curr_pose_utm, curr_angle, degrees(curr_angle)))
+
+		print("GOAL POSITION: {}".format(goal_pos))
 
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
@@ -180,19 +185,21 @@ class SingleGoalNav():
 		# 0 +/- angle_tolerance, then don't turn the rover!
 		##########################################################################
 		turn_angle = orientation_transforms.initiate_angle_transform(A, B)
-		if turn_angle != 0:
+		# if turn_angle != 0:
+
+		if abs(turn_angle) > abs(self.angle_tolerance):
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
 			self.nav_controller.execute_turn(radians(turn_angle))
 			print("Finished turn.")
+		else:
+			print("turn_angle not greater than angle tolerance, continuing straight..")
 		##########################################################################
 
 		drive_distance = self.determine_drive_distance(A, B)
 
 		if drive_distance > 0:
-			print("Driving Jackal {} meters..".format(drive_distance))
 			self.nav_controller.drive_forward(drive_distance, self.look_ahead)
-			print("Finished drive segment.")
 
 
 

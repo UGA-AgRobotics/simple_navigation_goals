@@ -87,11 +87,35 @@ class NavController:
 		/rf_stop is an emergency stop from the arduino, which uses a 
 		32197-MI 4 Ch. remote control receiver
 		"""
+		# print("Received RF stop message! {}".format(stop_msg))
 		if stop_msg.data == True:
 			print("Received RF stop message! {}".format(stop_msg))
 			self.emergency_stop = True
 		else:
 			self.emergency_stop = False
+
+
+
+	def test_rf_stop_routine(self, iteration_counter=0):
+		"""
+		Simulating drive routine loops to test the RF stop signal.
+		"""
+		while not rospy.is_shutdown():
+
+			while self.emergency_stop:
+				print("Inside nested emergency_stop loop, pausing drive routine, hopefully")
+
+			print("{} Inside RF test loop..".format(iteration_counter))
+			rospy.sleep(1.0/20.0)
+			iteration_counter += 1
+
+
+		# Recursion Exception!
+		# if self.emergency_stop:
+		# 	print("Emergency stop triggered the break in the loop! What to do next?")
+		# 	self.test_rf_stop_routine(iteration_counter)
+		# else:
+		# 	return
 
 
 
@@ -203,4 +227,11 @@ class NavController:
 if __name__ == '__main__':
 	rospy.init_node('nav_controller')
 	nc = NavController()
+
+	# Temporary testing of the RF stop feature:
+	###########################################
+	print("Running RF test routine..")
+	nc.test_rf_stop_routine()
+	###########################################
+
 	rospy.spin()

@@ -93,10 +93,10 @@ class SingleGoalNav():
 		######################################################################
 
 
-		# # Sleep routine for testing:
-		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		# rospy.sleep(10)
-		# print("Starting driving routine.")
+		# Sleep routine for testing:
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(10)
+		print("Starting driving routine.")
 
 
 		# Initial GPS position:
@@ -105,6 +105,7 @@ class SingleGoalNav():
 		# Accounting for look-ahead distance:
 		target_index = self.calc_target_index(curr_pose_utm, 0, _np_track[:,0], _np_track[:,1])
 		print("Initial target goal index: {}".format(target_index))
+
 
 
 		# Loop track goals here for each A->B in the course:

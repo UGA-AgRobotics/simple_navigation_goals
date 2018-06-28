@@ -8,6 +8,8 @@ A track is a series of points (e.g., x,y; lat,lon; easting,northing)
 that are intended for the robot to follow.
 """
 
+import utm
+
 
 
 class NavTracks(object):
@@ -63,7 +65,7 @@ class NavTracks(object):
 			goals = course.get('flags')
 
 		if len(goals) <= 0:
-			raise "Could not find goals in course object, make_track_from_course function, nav_tracks module.."
+			raise Exception("Could not find goals in course object, make_track_from_course function, nav_tracks module..")
 
 		for goal in goals:
 			_easting = goal.get('utmPos', {}).get('easting')
@@ -72,3 +74,28 @@ class NavTracks(object):
 
 		return track_list
 
+
+
+	def get_flags_from_geojson(self, flags_obj):
+		"""
+		Same as get_track_from_course, but reads in a geoJSON file
+		and builds a list of [easting, northing] pairs.
+		"""
+		flags = flags_obj.get('features')
+		flags_list = []
+
+		if len(flags) <= 0:
+			raise Exception("No flags found in flags file object..")
+
+		for flag in flags:
+
+			coords = flag.get('geometry').get('coordinates')
+
+			if not isinstance(coords, list):
+				raise Exception("Error reading flags file..")
+
+			utm_obj = utm.from_latlon(coords[0], coords[1])
+
+			flags_list.append([utm_obj[0], utm_obj[1]])
+
+		return flags_list

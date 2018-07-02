@@ -2,7 +2,7 @@
 
 import roslib
 import rospy
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Bool
 
 
 
@@ -14,15 +14,27 @@ class ActuatorTestNode:
 
 		rospy.init_node('actuator_test_node', anonymous=True)
 
+		self.actuator_min = 138
+		self.actuator_max = 65
+		self.actuator_scale = 90
+		self.actuator_home = 90
+
+		self.actuator_test_val = 1  # note: arduino firmware code will write 91 to servo
+
+		# Services:
+		# s = rospy.Service('test_drive', DriveDistance, self.handle_test_drive)
+
 		# Publishers:
-		# self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
 
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
+		rospy.Subscriber("/driver/run_actuator_test", Bool, self.actuator_test_callback)
 
 		print("actuator_test_node ready.")
+
+		# self.run_actuator_test_routine()
 
 		rospy.spin()
 
@@ -44,12 +56,48 @@ class ActuatorTestNode:
 
 
 
+	def actuator_test_callback(self, msg):
+		"""
+		Subscriber for starting drive test.
+		"""
+		if msg.data == True:
+			self.run_actuator_test_routine()
+
+
+
+	# def handle_test_drive(self, req):
+	# 	"""
+	# 	Function for test_drive service. Drives for a number
+	# 	of seconds.
+	# 	Input - drive_time (type: float64).
+	# 	"""
+	# 	drive_time = req.drive_time  # this currently has a default value of 1 in .srv file
+	# 	actuator_val = req.actuator_val  # this currently has a default value of 1 in .srv file
+		
+	# 	print("Initiating test drive routine. Driving {} seconds then stopping..".format(drive_time))
+
+	# 	return
+		
+
+
 	def run_actuator_test_routine(self):
 		"""
 		Run a simple test for the big rover's linear actuation.
 		"""
 		print("Running actuator test for big rover..")
-		pass
+		print("Publishing 1 to /driver/actuator topic (+1 from actuator's home state)..")
+
+		self.actuator_pub.publish(1)  # +1 from actuator home
+
+		rospy.sleep(1)  # sleep for 1s
+
+		print("Stopping rover by setting drive actuator to home state..")
+
+		self.actuator_pub.publish(0)  # set hydrolyic actuator to home state (aka stop)??
+
+		print("Rover stopped, hopefully.")
+
+		return
 
 
 

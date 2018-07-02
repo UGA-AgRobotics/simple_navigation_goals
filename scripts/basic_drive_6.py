@@ -53,25 +53,7 @@ class SingleGoalNav():
 
 		self.nav_controller = NavController()  # module that handles driving and turning routines
 
-
 		self.angle_tolerance = 2.0  # angle tolerance in degrees
-
-
-		
-		# Publisher to control the robot's speed
-		# self.cmd_vel = rospy.Publisher('/cmd_vel', Twist)
-
-		# print("Waiting for get_jackal_pos service..")
-		# rospy.wait_for_service('get_jackal_pos')
-		# self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-		# print("get_jackal_pos service ready.")
-
-
-		# print("Waiting for get_jackal_rot service..")
-		# rospy.wait_for_service('get_jackal_rot')
-		# self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		# print("get_jackal_rot service ready.")
-
 
 		# Gets track to follow:
 		###################################################################
@@ -195,8 +177,6 @@ class SingleGoalNav():
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
 			self.nav_controller.execute_turn(radians(turn_angle))
 			print("Finished turn.")
-		else:
-			print(">>> turn_angle not greater than angle tolerance, continuing straight..")
 		##########################################################################
 
 		drive_distance = self.determine_drive_distance(A, B)

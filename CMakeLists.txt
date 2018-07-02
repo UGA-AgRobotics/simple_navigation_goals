@@ -66,6 +66,7 @@ add_service_files(
 	JackalPos.srv
 	JackalRot.srv
 	SampleCollection.srv
+	DriveTest.srv
 )
 
 ## Generate actions in the 'action' folder

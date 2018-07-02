@@ -1,0 +1,8 @@
+# Test drive for the big rover.
+
+# time (s) to drive for test
+int8 drive_time=1
+
+# actuator for hydrolyic pump to drive big rover
+int8 actuator_val=1
+---

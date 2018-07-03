@@ -28,7 +28,7 @@ class FlagHandler:
 	def __init__(self, flags=None):
 
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
-		self.flag_tolerance = 0.8  # distance to flag to consider being at said flag (units: meters)
+		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 

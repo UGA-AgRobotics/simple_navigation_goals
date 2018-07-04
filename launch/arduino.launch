@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+<arg name="port" default="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM0)" />
+<arg name="baud" default="$(optenv ARDUINO_BAUD 57600)" />
+
+<node pkg="rosserial_python" name="rosserial_python" type="serial_node.py" output="screen" restart="always">
+	<param name="port" value="$(arg port)" />
+	<param name="baud" value="$(arg baud)" />
+</node>
+
+</launch>

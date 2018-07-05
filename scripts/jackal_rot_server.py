@@ -18,7 +18,7 @@ def rot_callback_imu(rot_msg):
 	published by the Jackal.
 	"""
 	global global_current_orientation
-	global_current_orientation = rot_msg.data
+	global_current_orientation = rot_msg.orientation
 
 
 

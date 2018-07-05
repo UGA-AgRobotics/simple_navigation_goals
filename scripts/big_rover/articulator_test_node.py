@@ -18,7 +18,6 @@ class ArticulatorTestNode:
 		self.current_pivot = None
 
 		# Publishers:
-		# self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 
 		# Subscribers:

@@ -11,6 +11,7 @@ import tf
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import utm
+import json
 
 
 
@@ -18,9 +19,9 @@ import utm
 tf_listener = tf.TransformListener()
 odom_frame = '/odom'
 base_frame = '/base_link'
-linear_speed = 0.3  # units of m/s
-rate = 20  # Hz
-angular_speed = 0.3
+linear_speed = 0.1  # units of m/s
+rate = 10  # Hz
+angular_speed = 0.1
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 
@@ -30,23 +31,24 @@ class NavController:
 
 	def __init__(self):
 
+		rospy.init_node('red_rover_nav_controller')
+
+		# Subscribers:
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
-		# rospy.Subscriber("sample_collected", Bool, self.sample_collected_callback)
-		rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
-
-		# rospy.Subscriber("/sample_points", String, self.sample_points_callback, queue_size=10)
-
+		# rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
+		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
+		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
+		rospy.Subscriber("/driver/run_throttle_test", Bool, self.throttle_test_callback)
 		# rospy.Subscriber('/stop_rover', Bool, self.stop_rover_callback)
 		# rospy.Subscriber('/start_rover', Bool, self.start_rover_callback)
 
 
-
-
-		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
-
-		self.move_cmd = Twist()
-
+		# Publishers:
+		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
+		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
+		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 		# self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
+
 
 		print("Waiting for start_sample_collection service..")
 		rospy.wait_for_service('start_sample_collection')
@@ -63,8 +65,45 @@ class NavController:
 		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
 		print("get_jackal_rot service ready.")
 
+
 		self.at_flag = False
 		self.emergency_stop = False
+
+		# Actuator settings:
+		self.actuator_min = 138
+		self.actuator_max = 65
+		self.actuator_scale = 90
+		self.actuator_home = 90
+
+		# Throttle settings:
+		self.throttle_home = 60
+		self.throttle_min = 60
+		self.throttle_max = 120
+
+		# Articulation settings:
+		self.turn_left = 0  # publish this value to turn left
+		self.turn_right = 2  # publish this value to turn right
+
+
+		print("Red Rover nav controller ready.")
+
+		rospy.spin()
+
+
+
+	# def sample_points_callback(self, msg):
+	# 	"""
+	# 	Reads in flags data (geojson format) and starts the
+	# 	red rover's navigation to the flags (in order).
+	# 	"""
+	# 	print("Received message from /sample_points topic. Loading received flags..")
+	# 	flags_obj = json.loads(msg.data)
+
+	# 	print("Flags: {}".format(flags_obj))
+
+	# 	# Convert flags into list of [easting, northing] pairs..
+
+
 
 
 
@@ -81,49 +120,28 @@ class NavController:
 
 
 
-	def rf_stop_callback(self, stop_msg):
-		"""
-		/rf_stop is an emergency stop from the arduino, which uses a 
-		32197-MI 4 Ch. remote control receiver
-		"""
-		# print("Received RF stop message! {}".format(stop_msg))
-		if stop_msg.data == True:
-			print("Received RF stop message! {}".format(stop_msg))
-			self.emergency_stop = True
-		else:
-			self.emergency_stop = False
-
-
-
-	def test_rf_stop_routine(self, iteration_counter=0):
-		"""
-		Simulating drive routine loops to test the RF stop signal.
-		"""
-		while not rospy.is_shutdown():
-
-			while self.emergency_stop:
-				print("Inside nested emergency_stop loop, pausing drive routine, hopefully")
-
-			print("{} Inside RF test loop..".format(iteration_counter))
-			rospy.sleep(1.0/20.0)
-			iteration_counter += 1
-
-
-		# Recursion Exception!
-		# if self.emergency_stop:
-		# 	print("Emergency stop triggered the break in the loop! What to do next?")
-		# 	self.test_rf_stop_routine(iteration_counter)
-		# else:
-		# 	return
+	# def rf_stop_callback(self, stop_msg):
+	# 	"""
+	# 	/rf_stop is an emergency stop from the arduino, which uses a 
+	# 	32197-MI 4 Ch. remote control receiver
+	# 	"""
+	# 	# print("Received RF stop message! {}".format(stop_msg))
+	# 	if stop_msg.data == True:
+	# 		print("Received RF stop message! {}".format(stop_msg))
+	# 		self.emergency_stop = True
+	# 	else:
+	# 		self.emergency_stop = False
 
 
 
 	def drive_forward(self, goal_distance, look_ahead):
 
-		print("Driving Jackal {} meters..".format(goal_distance))
+		print("Driving Rover {} meters..".format(goal_distance))
 
 		move_cmd = Twist()
 		move_cmd.linear.x = linear_speed
+
+		self.actuator_pub.publish()  # initiate forward movement
 
 		curr_pose_utm = self.get_current_position()  # returns UTM tuple
 
@@ -132,19 +150,12 @@ class NavController:
 
 		while distance < (goal_distance - look_ahead) and not self.at_flag and not self.emergency_stop and not rospy.is_shutdown():
 
-			# while self.emergency_stop:
-			# 	print("Emergency stop message received, stopping rover..")
-			# 	self.cmd_vel.publish(Twist())
-			# 	print("Rover stopped, maybe.")
-
 			rospy.sleep(1.0/rate)
 
 			curr_pose_utm = self.get_current_position()
 
 			distance = sqrt(pow((curr_pose_utm[0] - x_start), 2) + 
 							pow((curr_pose_utm[1] - y_start), 2))
-
-			self.cmd_vel.publish(move_cmd)
 
 
 		# Check to see if robot is at flag
@@ -154,8 +165,6 @@ class NavController:
 			print("Sample collected: {}".format(sample_collector_result))
 			self.at_flag = False
 
-		elif self.emergency_stop:
-			print("Emergency stop from RF device triggered break in driving routine..")
 
 		return
 
@@ -224,13 +233,8 @@ class NavController:
 
 
 if __name__ == '__main__':
-	rospy.init_node('nav_controller')
-	nc = NavController()
 
-	# Temporary testing of the RF stop feature:
-	###########################################
-	# print("Running RF test routine..")
-	# nc.test_rf_stop_routine()
-	###########################################
-
-	rospy.spin()
+	try:
+		NavController()
+	except rospy.ROSInterruptException:
+		raise

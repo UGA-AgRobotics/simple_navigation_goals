@@ -18,15 +18,15 @@ import rospy
 import utm
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
-import flag_file_handler  # local requirement
-import nav_tracks  # local requirement
+import json
+import ..flag_file_handler  # local requirement
+import ..nav_tracks  # local requirement
 
 
 
 class FlagHandler:
 
 	def __init__(self, flags=None):
-
 
 		print("Initializing jackal_flags_node..")
 		
@@ -38,19 +38,17 @@ class FlagHandler:
 
 		# Publishers:
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
-
+		
 		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
-
 		self.flags = flags  # where flags in format of list of utm pairs is stored
 
 		# if not self.flags:
 		# 	raise Exception("Must project jackal_flags_node with flags file")
 
-		# print("Flags list: {}".format(self.flags))
-		# print("Flag tolerance: {}".format(self.flag_tolerance))
-
+		print("Flags list: {}".format(self.flags))
+		print("Flag tolerance: {}".format(self.flag_tolerance))
 
 		print("jackal_flags_node ready.")
 
@@ -69,10 +67,13 @@ class FlagHandler:
 		# Convert flags into list of [easting, northing] pairs..
 		nt = nav_tracks.NavTracks()
 		flags_array = nt.get_flags_from_geojson(flags_obj)  # returns list of [easting, northing] pairs
+		self.flags = flags_array
 
 		print("Flags: {}".format(flags_array))
 
 		print("Publishing to Red Rover's drive node to initiate driving..")
+
+
 		
 
 
@@ -143,18 +144,17 @@ class FlagHandler:
 
 if __name__ == '__main__':
 
-	# TODO: Add this routine as a function in FileHandler class:
-
 	# _flag_filename = sys.argv[1]
 
-	# # Reads in flags file:
-	# fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
-	# fh.read_flags_file(_flag_filename)  # reads in flags file
-	# fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
+	# flags_file = open(_flag_filename, 'r')
+	# flags_data = flags_file.read()
+	# flags_file.close()
+
+	# flags_obj = json.loads(flags_data)
 
 	# # Uses nav_tracks module to convert flags file to list of [easting, northing] pairs:
 	# nt = nav_tracks.NavTracks()  # instantiates nav_tracks module
-	# flags = nt.get_track_from_course(fh.flags)  # converts flags file to list of utm pairs
+	# flags_array = nt.get_flags_from_geojson(flags_obj)  # returns list of [easting, northing] pairs
 
 	try:
 		flag_handler = FlagHandler()

@@ -38,6 +38,7 @@ class FlagHandler:
 
 		# Publishers:
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
+		self.start_drive_publisher = rospy.Publisher('/start_driving')
 
 		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
@@ -71,8 +72,12 @@ class FlagHandler:
 		flags_array = nt.get_flags_from_geojson(flags_obj)  # returns list of [easting, northing] pairs
 
 		print("Flags: {}".format(flags_array))
+		self.flags = flags_array
 
 		print("Publishing to Red Rover's drive node to initiate driving..")
+		self.start_drive_publisher.publish(True)
+
+		return
 		
 
 
@@ -90,6 +95,8 @@ class FlagHandler:
 		position to the flags. If within some distance, publish on /at_flag
 		topic to tell robot to stop!
 		"""
+		if not self.flags:
+			continue
 
 		current_flag = self.flags[self.flag_index]  # grab current flag, format: [easting, northing]
 
@@ -105,8 +112,8 @@ class FlagHandler:
 			self.flag_publisher.publish(True)  # Publishes to drive routine to stop robot at the flag
 
 			if self.flag_index >= len(self.flags) - 1:
-				print(">>> Finished driving to flags list. <<<")
-				print(">>> Continuing the rest of the row <<<")
+				print(">>> Finished driving to flags list.")
+				print(">>> Continuing the rest of the row.")
 				# self.flag_publisher.publish(False)
 				self.flag_run_complete = True
 				rospy.sleep(0.5)
@@ -127,6 +134,10 @@ class FlagHandler:
 		Position callback, which is executed in the event that a GPS fix is
 		published by the Jackal.
 		"""
+		if not self.flags:
+			continue
+
+
 		# print "jackal_pos_server: jackal's position: {}".format(current_fix)
 		current_utm = self.get_utm_from_fix(current_fix)  # converts current fix to utm
 

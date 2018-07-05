@@ -19,8 +19,10 @@ import utm
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
 import json
-import ..flag_file_handler  # local requirement
-import ..nav_tracks  # local requirement
+# import ..flag_file_handler  # local requirement
+# import ..nav_tracks  # local requirement
+from simple_navigation_goals.scripts import flag_file_handler
+from simple_navigation_goals.scripts import nav_tracks
 
 
 

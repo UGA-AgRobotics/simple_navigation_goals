@@ -37,10 +37,15 @@ class SingleGoalNav():
 	location, both converted to UTM.
 	"""
 
-	def __init__(self, course=None):
+	def __init__(self, path_json=None):
 		
 		# Give the node a name
 		rospy.init_node('single_goal_nav', anonymous=False)
+
+
+		# Subscribers:
+		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+
 		
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
@@ -55,15 +60,19 @@ class SingleGoalNav():
 
 		self.angle_tolerance = 2.0  # angle tolerance in degrees
 
-		# Gets track to follow:
-		###################################################################
-		nt = NavTracks()
-		if not course:
-			raise Exception("Must specify course")
-		_track = nt.get_track_from_course(course)  # builds track from a GPS course/path
-		_np_track = np.array(_track)
-		print("The Course: {}".format(_track))
-		###################################################################
+
+		self.path_json = path_json
+
+
+		# # Gets track to follow:
+		# ###################################################################
+		# nt = NavTracks()
+		# if not course:
+		# 	raise Exception("Must specify course")
+		# _track = nt.get_track_from_course(course)  # builds track from a GPS course/path
+		# _np_track = np.array(_track)
+		# print("The Course: {}".format(_track))
+		# ###################################################################
 
 
 		# Main model constants (todo: move main model constants to top):
@@ -73,6 +82,43 @@ class SingleGoalNav():
 		# step_size = 0.5  # dubins model step size in meters
 		self.look_ahead = 1.0  # look-ahead distance in meters
 		######################################################################
+
+		print("single_goal_nav node ready.")
+
+		rospy.spin()
+
+
+
+	def start_driving_callback(self, msg):
+		"""
+		Initiates driving routine.
+
+		TODO: Change how course is loaded? Currently, it's a file that's referenced, but
+		perhaps it could be sent across the /start_driving topic? Or maybe the course filename
+		could be passed as a message and not the entire course dataset?
+		"""
+		# path_to_follow = msg.data  # gets string of path filename (using custom format for paths, geojson for flags at the moment at least)
+
+		if msg.data == True:
+
+			# Gets track to follow:
+			nt = NavTracks()
+			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from path json
+			
+			print("The Course: {}".format(path_array))
+			print("Starting path following routine..")
+
+			self.start_path_following(path_array)
+
+
+
+	def start_path_following(self, path_array):
+		"""
+		This starts the looping of path points, going A->B, where B is at least
+		greater than some look-ahead distance.
+		"""
+
+		_np_track = np.array(path_array)  # get np array of path for easy manipulations
 
 
 		# Sleep routine for testing:
@@ -91,14 +137,14 @@ class SingleGoalNav():
 
 
 		# Loop track goals here for each A->B in the course:
-		for i in range(target_index, len(_track) - 1):
+		for i in range(target_index, len(path_array) - 1):
 
 			print ("i: {}".format(i))
-			current_goal = _track[i]
+			current_goal = path_array[i]
 
 			future_goal = None
 			try:
-				future_goal = _track[i + 1]
+				future_goal = path_array[i + 1]
 			except IndexError as e:
 				print("Current goal is the last one in the course!")
 
@@ -244,7 +290,7 @@ if __name__ == '__main__':
 	try:
 		course_filename = sys.argv[1]
 	except IndexError:
-		raise IndexError("Course not specified. Add course filename as arg when running basic_drive_5.py")
+		raise IndexError("Course not specified. Add course filename as arg when running basic_drive_6.py")
 
 	coursefile = open(course_filename, 'r')
 	course = json.loads(coursefile.read())
@@ -256,4 +302,21 @@ if __name__ == '__main__':
 		rospy.loginfo("Shutting down drive node!")
 		raise Exception("basic drive ROS node exception")
 
-	rospy.spin()
+	
+
+	# try:
+	# 	course_filename = sys.argv[1]
+	# except IndexError:
+	# 	raise IndexError("Course not specified. Add course filename as arg when running basic_drive_5.py")
+
+	# coursefile = open(course_filename, 'r')
+	# course = json.loads(coursefile.read())
+
+	# try:
+	# 	SingleGoalNav(course)
+	# except rospy.ROSInterruptException:
+	# 	rospy.loginfo("Navigation terminated.")
+	# 	rospy.loginfo("Shutting down drive node!")
+	# 	raise Exception("basic drive ROS node exception")
+
+	# rospy.spin()

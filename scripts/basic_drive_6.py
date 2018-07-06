@@ -21,7 +21,7 @@ import utm
 import PyKDL
 import numpy as np
 # import matplotlib.pyplot as plt
-import dubins
+# import dubins
 
 # Local package requirements:
 from nav_tracks import NavTracks

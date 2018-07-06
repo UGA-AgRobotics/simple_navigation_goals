@@ -26,7 +26,7 @@
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
 	<!-- Node to read data from reach via serial -->
-	<node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="reach_nmea_driver" respawn="false">
+	<node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="reach_nmea_driver" respawn="true">
 		<param name="port" value="$(arg REACH_SERIAL_PORT)" />
 		<param name="baud" value="$(arg REACH_BAUD)" />
 	</node>

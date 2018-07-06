@@ -67,7 +67,7 @@ class ThrottleTestNode:
 
 
 
-	def run_throttle_test_routine(self, throttle_val):
+	def run_throttle_test_routine(self, throttle_val=self.throttle_min):
 		"""
 		Runs a throttle test routine for the big rover.
 		"""

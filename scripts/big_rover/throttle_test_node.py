@@ -67,7 +67,7 @@ class ThrottleTestNode:
 
 
 
-	def run_throttle_test_routine(self, throttle_val=self.throttle_min):
+	def run_throttle_test_routine(self, throttle_val=None):
 		"""
 		Runs a throttle test routine for the big rover.
 		"""
@@ -77,6 +77,9 @@ class ThrottleTestNode:
 		if throttle_val < self.throttle_max or throttle_val > self.throttle_min:
 			print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_max, self.throttle_min))
 			return
+
+		if not throttle_val:
+			throttle_val = self.throttle_home
 
 		self.throttle_pub.publish(self.throttle_val)
 

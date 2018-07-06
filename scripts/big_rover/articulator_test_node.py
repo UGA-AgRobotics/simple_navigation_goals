@@ -90,7 +90,7 @@ class ArticulatorTestNode:
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_left_val)  # turn left
 
-		self.articulator_pub.publish(self.no_turn)
+		self.articulator_pub.publish(self.no_turn_val)
 
 		return
 
@@ -105,7 +105,7 @@ class ArticulatorTestNode:
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_right_val)  # turn right
 
-		self.articulator_pub.publish(self.no_turn)
+		self.articulator_pub.publish(self.no_turn_val)
 
 		return
 

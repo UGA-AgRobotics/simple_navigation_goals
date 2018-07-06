@@ -23,7 +23,8 @@ class ArticulatorTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/run_articulator_test", Bool, self.articulator_test_callback)
+		rospy.Subscriber("/driver/test/run_articulator_test", Bool, self.articulator_test_callback)
+		rospy.Subscriber("/driver/test/execute_turn", Bool, self.articulator_turn_callback)
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left

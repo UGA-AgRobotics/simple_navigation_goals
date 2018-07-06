@@ -26,8 +26,8 @@ class ArticulatorTestNode:
 		rospy.Subscriber("/driver/run_articulator_test", Bool, self.articulator_test_callback)
 
 		# Articulation settings:
-		self.turn_left = 0  # publish this value to turn left
-		self.turn_right = 2  # publish this value to turn right
+		self.turn_left_val = 0  # publish this value to turn left
+		self.turn_right_val = 2  # publish this value to turn right
 		self.max_angle = 22  # max right (relative to driver/rover)
 		self.min_angle = -22  # max left (relative to driver/rover)
 		self.min_angle_tolerance = 1.0  # min allowable angle tolerance
@@ -72,7 +72,7 @@ class ArticulatorTestNode:
 		while self.current_pivot > goal_pivot and not rospy.is_shutdown():
 			print("Current angle: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
-			self.articulator_pub.publish(self.turn_left)  # turn left
+			self.articulator_pub.publish(self.turn_left_val)  # turn left
 
 		return
 
@@ -85,7 +85,7 @@ class ArticulatorTestNode:
 		while self.current_pivot < goal_pivot and not rospy.is_shutdown():
 			print("Current angle: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
-			self.articulator_pub.publish(self.turn_left)  # turn right
+			self.articulator_pub.publish(self.turn_right_val)  # turn right
 
 		return
 

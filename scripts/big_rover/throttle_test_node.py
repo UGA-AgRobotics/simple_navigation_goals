@@ -26,7 +26,7 @@ class ThrottleTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/run_throttle_test", Bool, self.throttle_test_callback)
+		rospy.Subscriber("/driver/test/run_throttle_test", Bool, self.throttle_test_callback)
 
 		print("Setting throttle to min value to idle..")
 

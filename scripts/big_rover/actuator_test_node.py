@@ -14,12 +14,14 @@ class ActuatorTestNode:
 
 		rospy.init_node('actuator_test_node', anonymous=True)
 
-		self.actuator_min = 138
-		self.actuator_max = 65
+		rospy.on_shutdown(self.shutdown_actuator)
+
+		self.actuator_min = 65
+		self.actuator_max = 138
 		self.actuator_scale = 90
 		self.actuator_home = 90
 
-		self.actuator_test_val = 1  # note: arduino firmware code will write 91 to servo
+		self.actuator_test_val = 30  # note: arduino firmware code will write 91 to servo
 
 		# Services:
 		# s = rospy.Service('test_drive', DriveDistance, self.handle_test_drive)
@@ -44,7 +46,8 @@ class ActuatorTestNode:
 		"""
 		Subscriber callback for big rover's velocity.
 		"""
-		print("Rover velocity callback message: {}".format(msg))
+		# print("Rover velocity callback message: {}".format(msg))
+		pass
 		
 
 
@@ -52,7 +55,8 @@ class ActuatorTestNode:
 		"""
 		Subscriber callback for the big rover's current angle/pivot.
 		"""
-		print("Rover pivot callback message: {}".format(msg))
+		# print("Rover pivot callback message: {}".format(msg))
+		pass
 
 
 
@@ -85,19 +89,34 @@ class ActuatorTestNode:
 		Run a simple test for the big rover's linear actuation.
 		"""
 		print("Running actuator test for big rover..")
-		print("Publishing 1 to /driver/actuator topic (+1 from actuator's home state)..")
 
-		self.actuator_pub.publish(1)  # +1 from actuator home
+		print("Pausing 5s before publishing to actuator..")
+		rospy.sleep(5)
 
-		rospy.sleep(1)  # sleep for 1s
+		print("Publishing ")
+		self.actuator_pub.publish(self.actuator_test_val)  # +1 from actuator home
+
+		rospy.sleep(2)  # sleep for 1s
 
 		print("Stopping rover by setting drive actuator to home state..")
 
-		self.actuator_pub.publish(0)  # set hydrolyic actuator to home state (aka stop)??
+		self.actuator_pub.publish(self.actuator_home)  # set hydrolyic actuator to home state (aka stop)??
 
 		print("Rover stopped, hopefully.")
 
 		return
+
+
+
+	def shutdown_actuator(self):
+		"""
+		Set actuator to home state if node is killed/shutdown.
+		"""
+		print("Shutting down red rover actuator..")
+		rospy.sleep(1)
+		self.actuator_pub.publish(self.actuator_home)
+		rospy.sleep(1)
+		print("Red rover actuator shutdown.")
 
 
 

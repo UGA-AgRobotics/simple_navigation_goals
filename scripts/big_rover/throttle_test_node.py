@@ -92,7 +92,7 @@ class ThrottleTestNode:
 
 	def shutdown_throttle(self):
 		"""
-		Set throttle to home state if node is killed.
+		Set throttle to home state if node is killed/shutdown.
 		"""
 		print("Shutting down throttle, setting it to home state: {}".format(self.throttle_home))
 		rospy.sleep(1.0)

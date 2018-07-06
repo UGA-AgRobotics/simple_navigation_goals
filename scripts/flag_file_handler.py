@@ -14,6 +14,7 @@ the flags file.
 import utm
 import json
 import sys
+import csv
 import bag_handler
 
 
@@ -220,6 +221,39 @@ class FlagFileHandler(object):
 			_index += 1
 
 		self.flags = parsed_results  # set flags to parsed results
+
+
+
+	def convert_course_to_latlon_csv(self, input_filename, output_filename):
+		"""
+		Converts a course in JSON format to a CSV of lat,lons.
+		"""
+		_csv_data = []
+
+		print("Opening course file..")
+		filein= open(input_filename, 'r')
+		file_data = filein.read()
+		filein.close()
+
+		course_json = json.loads(file_data)  # converts json string to object		
+
+		print("Building CSV file of lat, lons..")
+		for pos_obj in course_json.get('flags', []):
+			_lat = pos_obj['decPos']['lat']
+			_lon = pos_obj['decPos']['lon']
+			_csv_data.append([_lat, _lon])
+
+		print("Writing data to CSV: {}".format(output_filename))
+		fileout = open(output_filename, 'wb')
+		csvwriter = csv.writer(fileout)
+		csvwriter.writerows(_csv_data)
+		fileout.close()
+
+		print("Done.")
+		return
+
+			
+
 
 
 

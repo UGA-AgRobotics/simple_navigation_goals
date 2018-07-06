@@ -174,6 +174,9 @@ class ArticulatorTestNode:
 
 
 	def shutdown_articulation(self):
+		"""
+		Stops turning if node is killed/shutdown.
+		"""
 		print(">>> Stopping red rover articulation..")
 		rospy.sleep(1)
 		self.articulator_pub.publish(self.no_turn_val)

@@ -32,7 +32,12 @@ class ActuatorTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/run_actuator_test", Bool, self.actuator_test_callback)
+		
+		rospy.Subscriber("/driver/test/run_actuator_test", Bool, self.actuator_test_callback)
+
+
+		self.actuator_pub.publish(self.actuator_home)
+
 
 		print("actuator_test_node ready.")
 

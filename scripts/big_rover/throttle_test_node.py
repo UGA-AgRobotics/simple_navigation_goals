@@ -44,7 +44,8 @@ class ThrottleTestNode:
 		"""
 		Subscriber callback for big rover's velocity.
 		"""
-		print("Rover velocity callback message: {}".format(msg))
+		# print("Rover velocity callback message: {}".format(msg))
+		pass
 		
 
 
@@ -52,7 +53,8 @@ class ThrottleTestNode:
 		"""
 		Subscriber callback for the big rover's current angle/pivot.
 		"""
-		print("Rover pivot callback message: {}".format(msg))
+		# print("Rover pivot callback message: {}".format(msg))
+		pass
 
 
 
@@ -71,7 +73,7 @@ class ThrottleTestNode:
 		"""
 		print("Running thottle test for big rover..")
 		print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_min))
-		
+
 		if throttle_val < self.throttle_max or throttle_val > self.throttle_min:
 			print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_max, self.throttle_min))
 			return

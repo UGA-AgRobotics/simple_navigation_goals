@@ -15,6 +15,8 @@ class ArticulatorTestNode:
 
 		rospy.init_node('articulator_test_node', anonymous=True)
 
+		rospy.on_shutdown(self.shutdown_articulation)
+
 		self.current_pivot = None
 
 		# Publishers:
@@ -29,8 +31,7 @@ class ArticulatorTestNode:
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
 		self.turn_right_val = 2  # publish this value to turn right
-
-		self.no_turn = 1  # publish this value to not turn??????
+		self.no_turn_val = 1  # publish this value to not turn??????
 
 		self.max_angle = 22  # max right (relative to driver/rover)
 		self.min_angle = -22  # max left (relative to driver/rover)
@@ -169,6 +170,15 @@ class ArticulatorTestNode:
 		self.turn_to_angle(0.0)
 
 		print("Articulation test complete.")
+
+
+
+	def shutdown_articulation(self):
+		print(">>> Stopping red rover articulation..")
+		rospy.sleep(1)
+		self.articulator_pub.publish(self.no_turn_val)
+		rospy.sleep(1)
+		print(">>> Red rover articulation stopped.")
 
 
 

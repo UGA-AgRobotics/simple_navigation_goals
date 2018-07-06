@@ -255,17 +255,6 @@ class SingleGoalNav():
 
 
 
-	# def get_current_position(self):
-	# 	"""
-	# 	Calls jackal_pos_server and converts the NavSatFix type
-	# 	into UTM format.
-	# 	"""
-	# 	curr_pose = self.get_jackal_pos()
-	# 	curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-	# 	return curr_pose_utm
-
-
-
 	def determine_drive_distance(self, A, B):
 		return math.sqrt((B[1] - A[1])**2 + (B[0] - A[0])**2)
 

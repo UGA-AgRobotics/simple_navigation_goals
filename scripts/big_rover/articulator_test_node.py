@@ -131,7 +131,7 @@ class ArticulatorTestNode:
 		turn_angle = goal_pivot - self.current_pivot  # determines direction to turn
 		print("Turning {} degrees..".format(turn_angle))
 
-		rospy.spin(1)
+		rospy.sleep(1)
 
 		if turn_angle < -self.min_angle_tolerance:
 			self.turn_left(goal_pivot)  # start turning left

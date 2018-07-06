@@ -28,6 +28,9 @@ class ArticulatorTestNode:
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
 		self.turn_right_val = 2  # publish this value to turn right
+
+		self.no_turn = 1  # publish this value to not turn??????
+
 		self.max_angle = 22  # max right (relative to driver/rover)
 		self.min_angle = -22  # max left (relative to driver/rover)
 		self.min_angle_tolerance = 1.0  # min allowable angle tolerance
@@ -65,14 +68,26 @@ class ArticulatorTestNode:
 
 
 
+	def articulator_turn_callback(self, msg):
+		"""
+		Subscriber callback to initate a turn for testing
+		the red rover's articulation.
+		"""
+		print("Received message on articulator_turn_callback to turn {} degrees..".format(msg.data))
+		self.turn_to_angle(msg.data)
+
+
+
+
 	def turn_left(self, goal_pivot):
 		"""
 		Turn left loop.
 		"""
 		while self.current_pivot > goal_pivot and not rospy.is_shutdown():
-			print("Current angle: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_left_val)  # turn left
+
+		self.articulator_pub.publish(self.no_turn)
 
 		return
 
@@ -83,9 +98,10 @@ class ArticulatorTestNode:
 		Turn right loop.
 		"""
 		while self.current_pivot < goal_pivot and not rospy.is_shutdown():
-			print("Current angle: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_right_val)  # turn right
+
+		self.articulator_pub.publish(self.no_turn)
 
 		return
 
@@ -111,6 +127,8 @@ class ArticulatorTestNode:
 		turn_angle = goal_pivot - self.current_pivot  # determines direction to turn
 		print("Turning {} degrees..".format(turn_angle))
 
+		rospy.spin(1)
+
 		if turn_angle < -self.min_angle_tolerance:
 			self.turn_left(goal_pivot)  # start turning left
 		elif turn_angle > self.min_angle_tolerance:
@@ -128,23 +146,23 @@ class ArticulatorTestNode:
 		print("Running articulation test for red rover..")
 	
 		print("Centering the rover first..")
-		rospy.sleep(1)
+		rospy.sleep(5)
 		self.turn_to_angle(0.0)
 
 		print("Turning the rover 10 degrees left..")
-		rospy.sleep(1)
+		rospy.sleep(5)
 		self.turn_to_angle(-10.0)
 
 		print("Re-centering the rover..")
-		rospy.sleep(1)
+		rospy.sleep(5)
 		self.turn_to_angle(0.0)
 
 		print("Turning the rover 10 degrees right..")
-		rospy.sleep(1)
+		rospy.sleep(5)
 		self.turn_to_angle(10.0)		
 
 		print("Re-centering the rover..")
-		rospy.sleep(1)
+		rospy.sleep(5)
 		self.turn_to_angle(0.0)
 
 		print("Articulation test complete.")

@@ -1,4 +1,4 @@
-export ARDUINO_BAUD=9600
+export ARDUINO_BAUD=57600
 export ARDUINO_SERIAL_PORT=/dev/ttyACM1
 export FLAG_FILE=/home/brad/Documents/ROS_Workspaces/simple_navigation_goals/src/simple_navigation_goals/goals/flags_2.json
 export PATH_FILE=/home/brad/Documents/ROS_Workspaces/simple_navigation_goals/src/simple_navigation_goals/courses/course_9_filled.json

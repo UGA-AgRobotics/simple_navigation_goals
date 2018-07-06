@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+<arg name="port" default="$(optenv ARDUINO_SERIAL_PORT /dev/ttyACM0)" />
+<arg name="baud" default="$(optenv ARDUINO_BAUD 57600)" />
+
+<node pkg="rosserial_python" name="rosserial" type="serial_node.py" output="screen" respawn="true">
+	<param name="port" value="$(arg port)" />
+	<param name="baud" value="$(arg baud)" />
+</node>
+
+<!-- <node pkg="simple_navigation_goals" name="jackal_pos_server" type="jackal_pos_server.py" output="screen" /> -->
+
+<node pkg="simple_navigation_goals" name="throttle_test_node" type="throttle_test_node.py" output="screen" />
+
+<node pkg="simple_navigation_goals" name="articulator_test_node" type="articulator_test_node.py" output="screen" />
+
+</launch>

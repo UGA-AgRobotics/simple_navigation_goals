@@ -21,7 +21,10 @@ def rot_callback_imu(rot_msg):
 	global global_current_orientation
 	# global_current_orientation = rot_msg.data
 	global_current_orientation = rot_msg.orientation
-	print("Current angle (degrees): {}".format(degrees(global_current_orientation)))
+
+	angle_in_degrees = degrees(quat_to_angle(global_current_orientation))
+
+	print("Current angle (degrees): {}".format(angle_in_degrees))
 
 
 

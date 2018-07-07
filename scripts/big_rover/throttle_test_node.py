@@ -75,7 +75,7 @@ class ThrottleTestNode:
 		if not throttle_val:
 			throttle_val = self.throttle_home
 
-		self.throttle_pub.publish(self.throttle_val)
+		self.throttle_pub.publish(throttle_val)
 
 
 

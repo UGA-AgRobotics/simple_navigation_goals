@@ -86,7 +86,7 @@ class ArticulatorTestNode:
 		Turn left loop.
 		"""
 		while self.current_pivot > goal_pivot and not rospy.is_shutdown():
-			print("Rover pivot: {}".format(goal_pivot))
+			print("Rover pivot: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_left_val)  # turn left
 
@@ -101,7 +101,7 @@ class ArticulatorTestNode:
 		Turn right loop.
 		"""
 		while self.current_pivot < goal_pivot and not rospy.is_shutdown():
-			print("Rover pivot: {}".format(goal_pivot))
+			print("Rover pivot: {}".format(self.current_pivot))
 			rospy.sleep(0.1)  # delay 100ms
 			self.articulator_pub.publish(self.turn_right_val)  # turn right
 

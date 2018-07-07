@@ -17,8 +17,8 @@ class ThrottleTestNode:
 		rospy.on_shutdown(self.shutdown_throttle)
 
 		self.throttle_home = 120
-		self.throttle_min = 120
-		self.throttle_max = 60
+		self.throttle_low = 120  # lowest rpm
+		self.throttle_high = 60  # highest rpm
 
 		# Publishers:
 		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
@@ -26,11 +26,11 @@ class ThrottleTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/test/run_throttle_test", Bool, self.throttle_test_callback)
+		rospy.Subscriber("/driver/test/set_throttle", Float64, self.set_throttle_callback, queue_size=1)
 
 		print("Setting throttle to min value to idle..")
 
-		self.throttle_pub.publish(self.throttle_home)  # set throttle to lowest rpm to idle
+		self.throttle_pub.publish(self.throttle_home)  # set throttle to lowest rpm at startup
 
 		print("throttle_test_node ready.")
 
@@ -58,20 +58,14 @@ class ThrottleTestNode:
 
 
 
-	def throttle_test_callback(self, msg):
+	def set_throttle_callback(self, msg):
 		"""
 		Subscriber callback for running throttle test.
 		"""
-		if msg.data == True:
-			self.run_throttle_test()
+		
+		throttle_val = msg.data
 
-
-
-	def run_throttle_test_routine(self, throttle_val=None):
-		"""
-		Runs a throttle test routine for the big rover.
-		"""
-		print("Running thottle test for big rover..")
+		print("Setting throttle to {}".format(throttle_val))
 		print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_min))
 
 		if throttle_val < self.throttle_max or throttle_val > self.throttle_min:
@@ -83,10 +77,24 @@ class ThrottleTestNode:
 
 		self.throttle_pub.publish(self.throttle_val)
 
-		# while not rospy.is_shutdown():
-		# 	rospy.sleep(0.2)  # sleep for 200 ms
-		# 	self.throttle_pub.publish(self.throttle_min)
-		# 	print("Publishing {} to /driver/throttle topic..".format(self.throttle_min))
+
+
+	# def run_throttle_test_routine(self, throttle_val=None):
+	# 	"""
+	# 	Runs a throttle test routine for the big rover.
+	# 	"""
+	# 	print("Running thottle test for big rover..")
+	# 	print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_min))
+
+	# 	if throttle_val < self.throttle_high or throttle_val > self.throttle_low:
+	# 		print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_high, self.throttle_low))
+	# 		throttle_val = None
+
+	# 	if not throttle_val:
+	# 		print("Setting throttle to idle (home) state..")
+	# 		throttle_val = self.throttle_home
+
+	# 	self.throttle_pub.publish(self.throttle_val)
 
 
 

@@ -16,13 +16,14 @@ class ActuatorTestNode:
 
 		rospy.on_shutdown(self.shutdown_actuator)
 
-		self.actuator_min = 65
-		self.actuator_max = 138
-		self.actuator_scale = 90
-		self.actuator_home = 90
+		self.actuator_min = -25  # accounting for scale factor on arduino (65 - 90) + 1 !!TEST THIS ONE!!
+		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
+		# self.actuator_scale = 90
+		# self.actuator_home = 90
+		self.actuator_home = 0
 		self.actuator_stop = 0
 
-		self.actuator_test_val = 30  # note: arduino firmware code will write 91 to servo
+		self.actuator_test_val = 30  # note: arduino firmware code will write actuator_test_val + 90 to servo
 
 		# Services:
 		# s = rospy.Service('test_drive', DriveDistance, self.handle_test_drive)

@@ -20,6 +20,7 @@ class ActuatorTestNode:
 		self.actuator_max = 138
 		self.actuator_scale = 90
 		self.actuator_home = 90
+		self.actuator_stop = 0
 
 		self.actuator_test_val = 30  # note: arduino firmware code will write 91 to servo
 
@@ -32,7 +33,7 @@ class ActuatorTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		
+		rospy.Subscriber("/driver/test/execute_drive", Float64, self.execute_drive)
 		rospy.Subscriber("/driver/test/run_actuator_test", Bool, self.actuator_test_callback)
 
 
@@ -98,17 +99,24 @@ class ActuatorTestNode:
 		print("Pausing 5s before publishing to actuator..")
 		rospy.sleep(5)
 
-		print("Publishing ")
+		print("Publishing..")
 		self.actuator_pub.publish(self.actuator_test_val)  # +1 from actuator home
 
 		rospy.sleep(2)  # sleep for 1s
 
 		print("Stopping rover by setting drive actuator to home state..")
 
-		self.actuator_pub.publish(self.actuator_home)  # set hydrolyic actuator to home state (aka stop)??
+		self.actuator_pub.publish(self.actuator_stop)  # set hydrolyic actuator to home state (aka stop)??
 
 		print("Rover stopped, hopefully.")
 
+		return
+
+
+
+	def execute_drive(self, mgs):
+		actuator_val = mgs.data
+		self.actuator_pub.publish(actuator_val)
 		return
 
 
@@ -119,7 +127,7 @@ class ActuatorTestNode:
 		"""
 		print("Shutting down red rover actuator..")
 		rospy.sleep(1)
-		self.actuator_pub.publish(self.actuator_home)
+		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
 		print("Red rover actuator shutdown.")
 

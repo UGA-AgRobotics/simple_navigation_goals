@@ -3,9 +3,7 @@
 import roslib
 import rospy
 from geometry_msgs.msg import Twist, Point, Quaternion
-from std_msgs.msg import Bool
-from std_msgs.msg import String
-from std_msgs.msg import Float64
+from std_msgs.msg import Bool, String, Float64, UInt8
 from simple_navigation_goals.srv import *
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL

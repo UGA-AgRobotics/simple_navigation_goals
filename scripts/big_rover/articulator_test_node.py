@@ -48,6 +48,8 @@ class ArticulatorTestNode:
 		self.min_pivot = -22  # max left (relative to driver/rover)
 		self.min_pivot_tolerance = 1.0  # min allowable angle tolerance
 
+		self.rate = 10  # rate of turning, in Hz
+
 		print("articulator_test_node ready.")
 
 		rospy.spin()
@@ -221,7 +223,7 @@ class ArticulatorTestNode:
 
 			self.articulator_pub.publish(_turn_val)
 
-			rospy.sleep(1.0/rate)
+			rospy.sleep(1.0/self.rate)
 
 			curr_angle = self.get_jackal_rot().jackal_rot
 			delta_angle = self.normalize_angle(curr_angle - last_angle)

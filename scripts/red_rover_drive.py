@@ -26,6 +26,10 @@ import orientation_transforms
 
 
 
+nc = NavController()
+
+
+
 class SingleGoalNav(object):
 	"""
 	Testing Jackal navigation to a single goal/flag. Determines
@@ -33,7 +37,7 @@ class SingleGoalNav(object):
 	location, both converted to UTM.
 	"""
 
-	nc = NavController()
+	# nc = NavController()
 
 
 	def __init__(self, path_json=None):

@@ -57,37 +57,29 @@ class SingleGoalNav():
 
 
 	def start_driving_callback(self, msg):
-		"""
-		Initiates Red Rover driving routine.
+	"""
+	Initiates driving routine.
+	The course file that was referenced when initiating the RedRoverDrive class
+	is converted to a list of [easting, northing] pairs, then initiate the rover
+	to drive and follow the course.
+	"""
+	if msg.data == True:
+
+		# Gets track to follow:
+		nt = NavTracks()
+		path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
 		
-		"""
+		print("The Course: {}".format(path_array))
+		print("Starting path following routine..")
+
+		self.start_path_following(path_array)
 
 
 
+	def start_path_following(self, path_array):
 
 
-
-
-
-
-		# # Gets track to follow:
-		# ###################################################################
-		# nt = NavTracks()
-		# if not course:
-		# 	raise Exception("Must specify course")
-		# _track = nt.get_track_from_course(course)  # builds track from a GPS course/path
-		# _np_track = np.array(_track)
-		# print("The Course: {}".format(_track))
-		# ###################################################################
-
-
-		# Main model constants (todo: move main model constants to top):
-		######################################################################
-		# qs_array = []  # collection of points for dubins paths
-		# turning_radius = 2.5  # min turning radius for robot in meters
-		# step_size = 0.5  # dubins model step size in meters
-		self.look_ahead = 1.0  # look-ahead distance in meters
-		######################################################################
+		_np_track = np.array(path_array)  # get np array of path for easy manipulations
 
 
 		# Sleep routine for testing:
@@ -106,14 +98,14 @@ class SingleGoalNav():
 
 
 		# Loop track goals here for each A->B in the course:
-		for i in range(target_index, len(_track) - 1):
+		for i in range(target_index, len(path_array) - 1):
 
 			print ("i: {}".format(i))
-			current_goal = _track[i]
+			current_goal = path_array[i]
 
 			future_goal = None
 			try:
-				future_goal = _track[i + 1]
+				future_goal = path_array[i + 1]
 			except IndexError as e:
 				print("Current goal is the last one in the course!")
 
@@ -126,7 +118,6 @@ class SingleGoalNav():
 
 			print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
 			print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
-
 
 
 			transformed_angle = orientation_transforms.transform_imu_frame(degrees(curr_angle))
@@ -173,7 +164,6 @@ class SingleGoalNav():
 		curr_angle = self.nav_controller.get_jackal_rot().jackal_rot
 
 		print("Jackal's position in UTM: {}, Jackal's angle: rad-{}, deg-{}".format(curr_pose_utm, curr_angle, degrees(curr_angle)))
-
 		print("GOAL POSITION: {}".format(goal_pos))
 
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
@@ -190,14 +180,15 @@ class SingleGoalNav():
 		# if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			self.nav_controller.execute_turn(radians(turn_angle))
+			# self.nav_controller.execute_turn(radians(turn_angle))
+			self.nav_controller.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 			print("Finished turn.")
 		##########################################################################
 
-		drive_distance = self.determine_drive_distance(A, B)
+		# drive_distance = self.determine_drive_distance(A, B)
 
-		if drive_distance > 0:
-			self.nav_controller.drive_forward(drive_distance, self.look_ahead)
+		# if drive_distance > 0:
+		# 	self.nav_controller.drive_forward(drive_distance, self.look_ahead)
 
 
 
@@ -235,7 +226,7 @@ class SingleGoalNav():
 		"""
 		rospy.loginfo(">>>>> Stopping the robot by publishing blank Twist to jackal_nav_controller..")
 		# self.nav_controller.cmd_vel.publish(Twist())
-		self.nav_controller.shutdown()
+		self.nav_controller.shutdown_all()
 		rospy.sleep(1)
 
 

@@ -26,7 +26,7 @@ import orientation_transforms
 
 
 
-class SingleGoalNav():
+class SingleGoalNav(object):
 	"""
 	Testing Jackal navigation to a single goal/flag. Determines
 	X and Y distance to travel using its GPS location and flag's 

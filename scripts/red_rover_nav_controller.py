@@ -21,7 +21,7 @@ angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees 
 
 
 
-class NavController:
+class NavController(object):
 
 	def __init__(self):
 

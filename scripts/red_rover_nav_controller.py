@@ -32,9 +32,8 @@ class NavController(object):
 		# rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/run_throttle_test", Bool, self.throttle_test_callback)
-		# rospy.Subscriber('/stop_rover', Bool, self.stop_rover_callback)
-		# rospy.Subscriber('/start_rover', Bool, self.start_rover_callback)
+		rospy.Subscriber("/driver/test/set_throttle", Float64, self.set_throttle_callback, queue_size=1)
+		rospy.Subscriber("/driver/test/execute_turn", Float64, self.articulator_turn_callback)
 
 		# Publishers:
 		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
@@ -42,7 +41,8 @@ class NavController(object):
 		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 		# self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
 
-		# Establishing ROS service connections
+
+		# Establishing ROS Service connections:
 		#############################################################################
 		print("Waiting for start_sample_collection service..")
 		rospy.wait_for_service('start_sample_collection')
@@ -76,15 +76,63 @@ class NavController(object):
 		self.throttle_max = 60  # full throttle!
 
 		# Articulation settings:
-		self.turn_left = 0  # publish this value to turn left
-		self.turn_right = 2  # publish this value to turn right
-		self.max_angle = 22  # max right (relative to driver/rover)
-		self.min_angle = -22  # max left (relative to driver/rover)
-		self.min_angle_tolerance = 1.0  # min allowable angle tolerance
+		self.turn_left_val = 0  # publish this value to turn left
+		self.turn_right_val = 2  # publish this value to turn right
+		self.no_turn_val = 1  # publish this value to not turn??????
+		self.max_pivot = 22  # max right (relative to driver/rover)
+		self.min_pivot = -22  # max left (relative to driver/rover)
+		self.min_pivot_tolerance = 1.0  # min allowable angle tolerance
 
+
+
+	def rover_velocity_callback(self, msg):
+		"""
+		Subscriber callback for big rover's velocity.
+		"""
+		# print("Rover velocity callback message: {}".format(msg))
+		pass
 		
 
 
+	def rover_pivot_callback(self, msg):
+		"""
+		Subscriber callback for the big rover's current angle/pivot.
+		"""
+		# print("Rover pivot callback message: {}".format(msg))
+		pass
+
+
+
+	def set_throttle_callback(self, msg):
+		"""
+		Subscriber callback for running throttle test.
+		"""
+		
+		throttle_val = msg.data
+
+		print("Setting throttle to {}".format(throttle_val))
+		print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_low))
+
+		if throttle_val < self.throttle_high or throttle_val > self.throttle_low:
+			print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_high, self.throttle_low))
+			return
+
+		if not throttle_val:
+			throttle_val = self.throttle_home
+
+		self.throttle_pub.publish(throttle_val)
+
+
+
+	def articulator_turn_callback(self, msg):
+		"""
+		Subscriber callback to initate a turn for testing
+		the red rover's articulation.
+		"""
+		print("Received message on articulator_turn_callback to turn {} degrees..".format(msg.data))
+		self.turn_to_pivot(msg.data)
+
+		
 
 	# def flag_callback(self, flag_msg):
 	# 	"""
@@ -113,49 +161,73 @@ class NavController(object):
 
 
 
-	# def drive_forward(self, goal_distance, look_ahead):
+	def check_pivot_bounds(self, goal_pivot):
+		"""
+		Trims goal pivot based on min/max allowable angles:
+		"""
+		if goal_pivot > self.max_pivot:
+			print("Requested rover pivot is too large, setting to max allowable: {}".format(self.max_pivot))
+			goal_pivot = self.max_pivot
+		elif goal_pivot < self.min_pivot:
+			print("Request rover pivot is too small, setting to min allowable: {}".format(self.min_pivot))
+			goal_pivot = self.min_pivot
+		return goal_pivot
 
-	# 	# TODO: set min allowable drive distance..
 
-	# 	_drive_val = None
-	# 	if goal_distance > 0:
-	# 		print("Driving fowards {} meters..".format(goal_distance))
-	# 		_drive_val = self.actuator_home  # TODO: change to move forward
-	# 	elif goal_distance < 0:
-	# 		print("Driving backwards {} meters..".format(goal_distance))
-	# 		_drive_val = self.actuator_home  # TODO: change to move backward
-	# 	else:
-	# 		print("Drive distance is zero, canceling drive request..")
-	# 		return
 
-	# 	self.actuator_pub.publish(_drive_val)  # initiate movement
+	def turn_left(self, goal_pivot):
+		"""
+		Turn left loop.
+		"""
+		while self.current_pivot > goal_pivot and not rospy.is_shutdown():
+			print("Rover pivot: {}".format(self.current_pivot))
+			rospy.sleep(0.1)  # delay 100ms
+			self.articulator_pub.publish(self.turn_left_val)  # turn left
 
-	# 	distance = 0  # distance traveled
-	# 	curr_pose_utm = self.get_current_position()  # current position in utm
-	# 	x_start, y_start = curr_pose_utm[0], curr_pose_utm[1]  # sets starting x,y position for drive
+		self.articulator_pub.publish(self.no_turn_val)
 
-	# 	while distance < (goal_distance - look_ahead) and not self.at_flag and not self.emergency_stop and not rospy.is_shutdown():
-	# 		rospy.sleep(1.0/rate)
-	# 		curr_pose_utm = self.get_current_position()
-	# 		distance = sqrt(pow((curr_pose_utm[0] - x_start), 2) + 
-	# 						pow((curr_pose_utm[1] - y_start), 2))
+		return
 
-		# # Stops rover and takes sample if at a flag:
-		# if self.at_flag:
-		# 	print("Near flag! Stopping Red Rover for collecting a sample..")
-		# 	self.stop_driving()  # stopping rover
-		# 	print("Pausing briefly before making request to collect a sample..")
-		# 	rospy.sleep(5)
-		# 	print("Calling sample collector service to initiate data collection while robot is stopped..")
-		# 	sample_collector_result = self.start_sample_collection('collect')
-		# 	print("Sample collected: {}".format(sample_collector_result))
-		# 	print("Pausing briefly before continuing on to next flag..")
-		# 	rospy.sleep(5)
-		# 	self.at_flag = False
 
-		# 	# TODO: Will probably need to rev engine up for sample collection..
 
-		# return
+	def turn_right(self, goal_pivot):
+		"""
+		Turn right loop.
+		"""
+		while self.current_pivot < goal_pivot and not rospy.is_shutdown():
+			print("Rover pivot: {}".format(self.current_pivot))
+			rospy.sleep(0.1)  # delay 100ms
+			self.articulator_pub.publish(self.turn_right_val)  # turn right
+
+		self.articulator_pub.publish(self.no_turn_val)
+
+		return
+
+
+
+
+	def turn_to_pivot(self, goal_pivot):
+		"""
+		Executes a turn to a specific angle using the
+		/driver/pivot topic.
+		Inputs:
+			goal_pivot - angle to turn to based on rover's /driver/pivot topic
+		"""
+
+		goal_pivot = self.check_pivot_bounds(goal_pivot)
+
+		turn_angle = goal_pivot - self.current_pivot  # determines direction to turn
+		print("Turning {} degrees..".format(turn_angle))
+
+		rospy.sleep(1)
+
+		if turn_angle < -self.min_pivot_tolerance:
+			self.turn_left(goal_pivot)  # start turning left
+		elif turn_angle > self.min_pivot_tolerance:
+			self.turn_right(goal_pivot)  # start turning right
+		else:
+			print("Turn angle is zero, canceling turn request..")
+			return  # don't turn if angle is 0
 
 
 
@@ -247,7 +319,7 @@ class NavController(object):
 		print("Shutting down rover, stopping drive, lowering throttle rpms..")
 		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
-		self.throttle_pub.publish(120)
+		self.throttle_pub.publish(self.throttle_home)
 		rospy.sleep(1)
 		print("Red rover stopped.")
 

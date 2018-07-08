@@ -33,6 +33,9 @@ class SingleGoalNav(object):
 	location, both converted to UTM.
 	"""
 
+	nc = NavController()
+
+
 	def __init__(self, course=None):
 		
 		# Give the node a name
@@ -50,7 +53,7 @@ class SingleGoalNav(object):
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(rate)
 
-		self.nav_controller = NavController()  # module that handles driving and turning routines
+		# self.nav_controller = NavController()  # module that handles driving and turning routines
 
 		self.angle_tolerance = 2.0  # angle tolerance in degrees
 
@@ -89,7 +92,7 @@ class SingleGoalNav(object):
 
 
 		# Initial GPS position:
-		curr_pose_utm = self.nav_controller.get_current_position()
+		curr_pose_utm = nc.get_current_position()
 
 		# Accounting for look-ahead distance:
 		target_index = self.calc_target_index(curr_pose_utm, 0, _np_track[:,0], _np_track[:,1])
@@ -113,8 +116,8 @@ class SingleGoalNav(object):
 
 
 
-			curr_pose_utm = self.nav_controller.get_current_position()  # returns NavSatFix type of position
-			curr_angle = self.nav_controller.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
+			curr_pose_utm = nc.get_current_position()  # returns NavSatFix type of position
+			curr_angle = nc.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
 
 			print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
 			print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
@@ -139,7 +142,7 @@ class SingleGoalNav(object):
 
 			# NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??
 			#####################################################################################################
-			curr_pose_utm = self.nav_controller.get_current_position()
+			curr_pose_utm = nc.get_current_position()
 			new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1])
 			print("Target index: {}".format(new_target_index))
 			if new_target_index > target_index:
@@ -160,8 +163,8 @@ class SingleGoalNav(object):
 		two GPS points on the course, or a step size incrementing a drive
 		between two GPS points.
 		"""
-		curr_pose_utm = self.nav_controller.get_current_position()
-		curr_angle = self.nav_controller.get_jackal_rot().jackal_rot
+		curr_pose_utm = nc.get_current_position()
+		curr_angle = nc.get_jackal_rot().jackal_rot
 
 		print("Jackal's position in UTM: {}, Jackal's angle: rad-{}, deg-{}".format(curr_pose_utm, curr_angle, degrees(curr_angle)))
 		print("GOAL POSITION: {}".format(goal_pos))
@@ -180,15 +183,15 @@ class SingleGoalNav(object):
 		# if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			# self.nav_controller.execute_turn(radians(turn_angle))
-			self.nav_controller.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+			# nc.execute_turn(radians(turn_angle))
+			nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 			print("Finished turn.")
 		##########################################################################
 
 		# drive_distance = self.determine_drive_distance(A, B)
 
 		# if drive_distance > 0:
-		# 	self.nav_controller.drive_forward(drive_distance, self.look_ahead)
+		# 	nc.drive_forward(drive_distance, self.look_ahead)
 
 
 
@@ -225,7 +228,7 @@ class SingleGoalNav(object):
 		Always stop the robot when shutting down the node
 		"""
 		rospy.loginfo(">>>>> Stopping the robot by publishing blank Twist to jackal_nav_controller..")
-		self.nav_controller.shutdown_all()
+		nc.shutdown_all()
 		# nt.shutdown_all()
 		rospy.sleep(1)
 

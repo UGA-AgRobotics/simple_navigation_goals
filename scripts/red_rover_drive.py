@@ -109,7 +109,7 @@ class SingleGoalNav(object):
 
 
 		# Loop track goals here for each A->B in the course:
-		
+
 		# NOTE: ADD THIS LOOP BACK AFTER TESTING SINGLE POINT!!!!!!!!!!!
 		# for i in range(target_index, len(path_array) - 1):
 		print ("i: {}".format(i))
@@ -143,7 +143,8 @@ class SingleGoalNav(object):
 		# Skips to next goal/course point if said goal is less than look-ahead:
 		if drive_distance < self.look_ahead:
 			print("Within look-ahead of goal, so skipping to next goal")
-			continue  # skip to next iteration in track for loop
+			# continue  # skip to next iteration in track for loop
+			return  # CHANGE THIS BACK TO CONTINUE AFTER SINGLE GOAL TEST!!!!!!
 
 		current_goal = B  # TODO: organize this..
 		self.p2p_drive_routine(current_goal)  # main drive routine

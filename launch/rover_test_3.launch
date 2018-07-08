@@ -39,12 +39,12 @@ Node to read data from reach via serial
 <node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" />
 
 <!-- Throttle Test Node -->
-<node pkg="simple_navigation_goals" name="throttle_test_node" type="throttle_test_node.py" output="screen" />
+<node pkg="simple_navigation_goals" name="red_rover_test_node_throttle" type="red_rover_test_node_throttle.py" output="screen" />
 
 <!-- Articulator Test Node -->
-<node pkg="simple_navigation_goals" name="articulator_test_node" type="articulator_test_node.py" output="screen" />
+<node pkg="simple_navigation_goals" name="red_rover_test_node_articulator" type="red_rover_test_node_articulator.py" output="screen" />
 
 <!-- Actuator Test Node -->
-<node pkg="simple_navigation_goals" name="actuator_test_node" type="actuator_test_node.py" output="screen" />
+<node pkg="simple_navigation_goals" name="red_rover_test_node_actuator" type="red_rover_test_node_actuator.py" output="screen" />
 
 </launch>

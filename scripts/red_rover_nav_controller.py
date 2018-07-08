@@ -25,7 +25,7 @@ class NavController(object):
 
 	def __init__(self):
 
-		rospy.init_node('red_rover_nav_controller')
+		
 
 		# Subscribers:
 		# rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
@@ -36,13 +36,11 @@ class NavController(object):
 		# rospy.Subscriber('/stop_rover', Bool, self.stop_rover_callback)
 		# rospy.Subscriber('/start_rover', Bool, self.start_rover_callback)
 
-
 		# Publishers:
 		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
 		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
 		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 		# self.sample_publisher = rospy.Publisher('collect_sample', Bool, queue_size=1)
-
 
 		# Establishing ROS service connections
 		#############################################################################
@@ -84,9 +82,7 @@ class NavController(object):
 		self.min_angle = -22  # max left (relative to driver/rover)
 		self.min_angle_tolerance = 1.0  # min allowable angle tolerance
 
-		print("Red Rover nav controller ready.")
-
-		rospy.spin()
+		
 
 
 
@@ -264,6 +260,9 @@ class NavController(object):
 if __name__ == '__main__':
 
 	try:
-		NavController()
+		rospy.init_node('red_rover_nav_controller')
+		nc = NavController()
+		print("Red Rover nav controller ready.")
+		rospy.spin()
 	except rospy.ROSInterruptException:
 		raise

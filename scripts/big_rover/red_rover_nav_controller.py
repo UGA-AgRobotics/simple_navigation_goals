@@ -28,7 +28,7 @@ class NavController:
 		rospy.init_node('red_rover_nav_controller')
 
 		# Subscribers:
-		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
+		# rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		# rospy.Subscriber("/rf_stop", Bool, self.rf_stop_callback, queue_size=1)
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
@@ -90,18 +90,16 @@ class NavController:
 
 
 
-
-
-	def flag_callback(self, flag_msg):
-		"""
-		Subscribes to /at_flag topic that's being published by
-		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
-		"""
-		if flag_msg.data == True or flag_msg == True:
-			print("Stopping cause we're at the flag!!!")
-			self.at_flag = True  # sets main at_flag to True for robot..
-		else:
-			self.at_flag = False
+	# def flag_callback(self, flag_msg):
+	# 	"""
+	# 	Subscribes to /at_flag topic that's being published by
+	# 	jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+	# 	"""
+	# 	if flag_msg.data == True or flag_msg == True:
+	# 		print("Stopping cause we're at the flag!!!")
+	# 		self.at_flag = True  # sets main at_flag to True for robot..
+	# 	else:
+	# 		self.at_flag = False
 
 
 
@@ -146,20 +144,20 @@ class NavController:
 			distance = sqrt(pow((curr_pose_utm[0] - x_start), 2) + 
 							pow((curr_pose_utm[1] - y_start), 2))
 
-		# Stops rover and takes sample if at a flag:
-		if self.at_flag:
-			print("Near flag! Stopping Red Rover for collecting a sample..")
-			self.stop_navigation()  # stopping rover
-			print("Pausing briefly before making request to collect a sample..")
-			rospy.sleep(5)
-			print("Calling sample collector service to initiate data collection while robot is stopped..")
-			sample_collector_result = self.start_sample_collection('collect')
-			print("Sample collected: {}".format(sample_collector_result))
-			print("Pausing briefly before continuing on to next flag..")
-			rospy.sleep(5)
-			self.at_flag = False
+		# # Stops rover and takes sample if at a flag:
+		# if self.at_flag:
+		# 	print("Near flag! Stopping Red Rover for collecting a sample..")
+		# 	self.stop_navigation()  # stopping rover
+		# 	print("Pausing briefly before making request to collect a sample..")
+		# 	rospy.sleep(5)
+		# 	print("Calling sample collector service to initiate data collection while robot is stopped..")
+		# 	sample_collector_result = self.start_sample_collection('collect')
+		# 	print("Sample collected: {}".format(sample_collector_result))
+		# 	print("Pausing briefly before continuing on to next flag..")
+		# 	rospy.sleep(5)
+		# 	self.at_flag = False
 
-			# TODO: Will probably need to rev engine up for sample collection..
+		# 	# TODO: Will probably need to rev engine up for sample collection..
 
 		return
 

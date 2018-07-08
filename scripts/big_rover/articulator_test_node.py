@@ -73,7 +73,8 @@ class ArticulatorTestNode:
 		Subscriber callback for running articulation test.
 		"""
 		if msg.data == True:
-			self.run_articulator_test_routine()
+			# self.run_articulator_test_routine()
+			self.run_imu_turn_test()
 
 
 

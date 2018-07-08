@@ -36,7 +36,7 @@ class SingleGoalNav(object):
 	nc = NavController()
 
 
-	def __init__(self, course=None):
+	def __init__(self, path_json=None):
 		
 		# Give the node a name
 		rospy.init_node('single_goal_nav')
@@ -56,6 +56,8 @@ class SingleGoalNav(object):
 		# self.nav_controller = NavController()  # module that handles driving and turning routines
 
 		self.angle_tolerance = 2.0  # angle tolerance in degrees
+
+		self.path_json = path_json  # The path/course the red rover will follow!
 
 
 

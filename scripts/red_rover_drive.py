@@ -36,7 +36,7 @@ class SingleGoalNav():
 	def __init__(self, course=None):
 		
 		# Give the node a name
-		rospy.init_node('single_goal_nav', anonymous=False)
+		rospy.init_node('single_goal_nav')
 
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)

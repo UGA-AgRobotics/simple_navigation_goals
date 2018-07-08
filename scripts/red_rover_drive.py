@@ -224,9 +224,10 @@ class SingleGoalNav():
 		"""
 		Always stop the robot when shutting down the node
 		"""
+		nt = NavController()
 		rospy.loginfo(">>>>> Stopping the robot by publishing blank Twist to jackal_nav_controller..")
-		# self.nav_controller.cmd_vel.publish(Twist())
-		self.nav_controller.shutdown_all()
+		# self.nav_controller.shutdown_all()
+		nt.shutdown_all()
 		rospy.sleep(1)
 
 

@@ -224,7 +224,8 @@ class SingleGoalNav(object):
 		return math.sqrt((B[1] - A[1])**2 + (B[0] - A[0])**2)
 
 
-	
+
+
 	def shutdown(self):
 		"""
 		Always stop the robot when shutting down the node

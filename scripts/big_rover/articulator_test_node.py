@@ -286,10 +286,10 @@ class ArticulatorTestNode:
 
 		rospy.sleep(1)
 		print("Current pivot: {}".format(self.current_pivot))
-	
-		print("Centering the rover first..")
-		rospy.sleep(5)
-		self.turn_to_pivot(10.0)  # NOTE: IF THE SENSOR IS STILL OFF, SHIFT THIS VALUE TO ACCOUNT FOR THAT!!!!!
+
+		#print("Centering the rover first..")
+		#rospy.sleep(5)
+		#self.turn_to_pivot(0.0)  # NOTE: IF THE SENSOR IS STILL OFF, SHIFT THIS VALUE TO ACCOUNT FOR THAT!!!!!
 
 		rospy.sleep(5)
 		print("Turning rover 5 degrees left using the IMU..")

@@ -63,6 +63,8 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
+		self.look_ahead = 1.0
+
 
 
 	def start_driving_callback(self, msg):

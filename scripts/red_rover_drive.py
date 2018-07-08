@@ -109,58 +109,61 @@ class SingleGoalNav(object):
 
 
 		# Loop track goals here for each A->B in the course:
-
-		# NOTE: ADD THIS LOOP BACK AFTER TESTING SINGLE POINT!!!!!!!!!!!
 		# for i in range(target_index, len(path_array) - 1):
-		print ("i: {}".format(i))
-		current_goal = path_array[i]
+		for i in range(0,1):
 
-		future_goal = None
-		try:
-			future_goal = path_array[i + 1]
-		except IndexError as e:
-			print("Current goal is the last one in the course!")
+			print ("i: {}".format(i))
+			current_goal = path_array[i]
 
-		goal_orientation = orientation_transforms.determine_angle_at_goal(current_goal, future_goal)
+			future_goal = None
+			try:
+				future_goal = path_array[i + 1]
+			except IndexError as e:
+				print("Current goal is the last one in the course!")
 
-
-
-		curr_pose_utm = nc.get_current_position()  # returns NavSatFix type of position
-		curr_angle = nc.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
-
-		print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
-		print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
+			goal_orientation = orientation_transforms.determine_angle_at_goal(current_goal, future_goal)
 
 
-		transformed_angle = orientation_transforms.transform_imu_frame(degrees(curr_angle))
 
-		A = (curr_pose_utm[0], curr_pose_utm[1], radians(transformed_angle))  # initial position of jackal
-		B = (current_goal[0], current_goal[1], goal_orientation)
+			curr_pose_utm = nc.get_current_position()  # returns NavSatFix type of position
+			curr_angle = nc.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
 
-
-		drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
-
-		# Skips to next goal/course point if said goal is less than look-ahead:
-		if drive_distance < self.look_ahead:
-			print("Within look-ahead of goal, so skipping to next goal")
-			# continue  # skip to next iteration in track for loop
-			return  # CHANGE THIS BACK TO CONTINUE AFTER SINGLE GOAL TEST!!!!!!
-
-		current_goal = B  # TODO: organize this..
-		self.p2p_drive_routine(current_goal)  # main drive routine
+			print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
+			print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
 
 
-		# # NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??
-		# #####################################################################################################
-		# curr_pose_utm = nc.get_current_position()
-		# new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1])
-		# print("Target index: {}".format(new_target_index))
-		# if new_target_index > target_index:
-		# 	print(">>> Jackal is within look-ahead distance of goal, starting to drive toward next goal now..")
-		# 	target_index = new_target_index
-		# 	i = target_index
-		# 	print ("@@@ new i: {} @@@".format(i))
-		# #####################################################################################################
+			transformed_angle = orientation_transforms.transform_imu_frame(degrees(curr_angle))
+
+			A = (curr_pose_utm[0], curr_pose_utm[1], radians(transformed_angle))  # initial position of jackal
+			B = (current_goal[0], current_goal[1], goal_orientation)
+
+
+			drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
+
+			# Skips to next goal/course point if said goal is less than look-ahead:
+			if drive_distance < self.look_ahead:
+				print("Within look-ahead of goal, so skipping to next goal")
+				continue  # skip to next iteration in track for loop
+
+			current_goal = B  # TODO: organize this..
+			self.p2p_drive_routine(current_goal)  # main drive routine
+
+
+			# NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??
+			#####################################################################################################
+			curr_pose_utm = nc.get_current_position()
+			new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1])
+			print("Target index: {}".format(new_target_index))
+			if new_target_index > target_index:
+				print(">>> Jackal is within look-ahead distance of goal, starting to drive toward next goal now..")
+				target_index = new_target_index
+				i = target_index
+				print ("@@@ new i: {} @@@".format(i))
+			#####################################################################################################
+
+			print("STOPPING SINGLE POINT TEST!")
+			return  # REMOVE THIS AFTER SINGLE GOAL TESTING !!!!!!!!!!!!!
+
 
 		print("Shutting down Jackal..")
 		self.shutdown()

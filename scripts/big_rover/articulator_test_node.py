@@ -234,6 +234,8 @@ class ArticulatorTestNode:
 				print("Delta angle is 0, breaking out of turning loop..")
 				break
 
+		self.articulator_pub.publish(self.no_turn_val)  # stop turning once goal angle is reached.
+
 		# if self.emergency_stop:
 		# 	print("Emergency stop from RF remote received, stopping turning routine..")
 

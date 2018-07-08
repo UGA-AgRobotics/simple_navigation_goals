@@ -20,9 +20,9 @@ import PyKDL
 import numpy as np
 
 # Local package requirements:
-from ..nav_tracks import NavTracks
+from nav_tracks import NavTracks
 from red_rover_nav_controller import NavController
-from .. import orientation_transforms
+import orientation_transforms
 
 
 
@@ -57,22 +57,22 @@ class SingleGoalNav():
 
 
 	def start_driving_callback(self, msg):
-	"""
-	Initiates driving routine.
-	The course file that was referenced when initiating the RedRoverDrive class
-	is converted to a list of [easting, northing] pairs, then initiate the rover
-	to drive and follow the course.
-	"""
-	if msg.data == True:
+		"""
+		Initiates driving routine.
+		The course file that was referenced when initiating the RedRoverDrive class
+		is converted to a list of [easting, northing] pairs, then initiate the rover
+		to drive and follow the course.
+		"""
+		if msg.data == True:
 
-		# Gets track to follow:
-		nt = NavTracks()
-		path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-		
-		print("The Course: {}".format(path_array))
-		print("Starting path following routine..")
+			# Gets track to follow:
+			nt = NavTracks()
+			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
+			
+			print("The Course: {}".format(path_array))
+			print("Starting path following routine..")
 
-		self.start_path_following(path_array)
+			self.start_path_following(path_array)
 
 
 

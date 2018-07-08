@@ -215,7 +215,7 @@ class ArticulatorTestNode:
 		last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
 
 		# while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
-		while abs(turn_angle) < abs(goal_angle) and not rospy.is_shutdown():
+		while abs(turn_angle) < abs(radians(goal_angle)) and not rospy.is_shutdown():
 
 			# self.cmd_vel.publish(move_cmd)
 

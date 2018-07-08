@@ -30,10 +30,14 @@ class ArticulatorTestNode:
 		rospy.Subscriber("/driver/test/execute_turn", Float64, self.articulator_turn_callback)
 
 		# Services:
-		print("Waiting for get_red_rover_rot service..")
-		rospy.wait_for_service('get_red_rover_rot')
-		self.get_red_rover_rot = rospy.ServiceProxy('get_red_rover_rot', RedRoverRot)
-		print("get_red_rover_rot service ready.")
+		# print("Waiting for get_red_rover_rot service..")
+		# rospy.wait_for_service('get_red_rover_rot')
+		# self.get_red_rover_rot = rospy.ServiceProxy('get_red_rover_rot', RedRoverRot)
+		# print("get_red_rover_rot service ready.")
+		print("Waiting for get_jackal_rot service..")
+		rospy.wait_for_service('get_jackal_rot')
+		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+		print("get_jackal_rot service ready.")
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
@@ -206,7 +210,7 @@ class ArticulatorTestNode:
 			_turn_val = self.turn_left_val  # value to turn left
 
 		turn_angle = 0
-		last_angle = self.get_red_rover_rot().rot_val  # get angle from IMU (in radians)
+		last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
 
 		while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
 
@@ -218,7 +222,7 @@ class ArticulatorTestNode:
 
 			rospy.sleep(1.0/rate)
 
-			curr_angle = self.get_red_rover_rot().rot_val
+			curr_angle = self.get_jackal_rot().jackal_rot
 			delta_angle = self.normalize_angle(curr_angle - last_angle)
 			turn_angle += delta_angle
 			last_angle = curr_angle
@@ -285,7 +289,7 @@ class ArticulatorTestNode:
 	
 		print("Centering the rover first..")
 		rospy.sleep(5)
-		self.turn_to_pivot(0.0)  # NOTE: IF THE SENSOR IS STILL OFF, SHIFT THIS VALUE TO ACCOUNT FOR THAT!!!!!
+		self.turn_to_pivot(10.0)  # NOTE: IF THE SENSOR IS STILL OFF, SHIFT THIS VALUE TO ACCOUNT FOR THAT!!!!!
 
 		rospy.sleep(5)
 		print("Turning rover 5 degrees left using the IMU..")

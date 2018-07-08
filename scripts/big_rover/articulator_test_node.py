@@ -4,6 +4,7 @@ import roslib
 import rospy
 from std_msgs.msg import Float64, Bool
 from math import radians
+from simple_navigation_goals.srv import *
 
 
 

@@ -81,6 +81,8 @@ class NavController(object):
 		self.min_pivot = -22  # max left (relative to driver/rover)
 		self.min_pivot_tolerance = 1.0  # min allowable angle tolerance
 
+		self.rate = 10  # loop rate for turning and such (Hz)
+
 
 
 	def rover_velocity_callback(self, msg):

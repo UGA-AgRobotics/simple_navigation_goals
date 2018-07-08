@@ -42,10 +42,10 @@ class NavController(object):
 
 		# Establishing ROS Service connections:
 		#############################################################################
-		print("Waiting for start_sample_collection service..")
-		rospy.wait_for_service('start_sample_collection')
-		self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
-		print("start_sample_collection service ready.")
+		# print("Waiting for start_sample_collection service..")
+		# rospy.wait_for_service('start_sample_collection')
+		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
+		# print("start_sample_collection service ready.")
 
 		print("Waiting for get_jackal_pos service..")
 		rospy.wait_for_service('get_jackal_pos')

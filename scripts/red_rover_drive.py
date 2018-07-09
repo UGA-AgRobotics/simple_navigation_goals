@@ -68,7 +68,7 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		self.look_ahead = 1.0
+		self.look_ahead = 5.0
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
@@ -224,31 +224,31 @@ class SingleGoalNav(object):
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
 
-			# if turn_check_counter % self.rate:
-			# 	# hits this every conditional every 1 second
-			# 	print("Checking turn angle relative to look-ahead..")
-			# 	# calculates index to a new look ahead to calculate turn angle:
-			# 	target_index = self.calc_target_index(A, target_index, np_course[:,0], np_course[:,1])
+			if turn_check_counter % self.rate:
+				# hits this every conditional every 1 second
+				print("Checking turn angle relative to look-ahead..")
+				# calculates index to a new look ahead to calculate turn angle:
+				target_index = self.calc_target_index(A, target_index, np_course[:,0], np_course[:,1])
 
-			# 	A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
-			# 	B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
+				A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
+				B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
 
-			# 	future_goal = self.path_array[target_index]  # get goal look-ahead away to determine turn
+				future_goal = self.path_array[target_index]  # get goal look-ahead away to determine turn
 
-			# 	turn_angle = orientation_transforms.initiate_angle_transform(A, self.path_array[target_index])
-			# 	turn_angle = -1.0 * turn_angle
+				turn_angle = orientation_transforms.initiate_angle_transform(A, self.path_array[target_index])
+				turn_angle = -1.0 * turn_angle
 
-			# 	if abs(turn_angle) > abs(self.angle_tolerance):
+				if abs(turn_angle) > abs(self.angle_tolerance):
 					
-			# 		if turn_angle < -22:
-			# 			turn_angle = -10
-			# 		elif turn_angle > 22:
-			# 			turn_angle = 10
+					if turn_angle < -22:
+						turn_angle = -10
+					elif turn_angle > 22:
+						turn_angle = 10
 
-			# 		# Determine angle to turn based on IMU..
-			# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			# 		nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
-			# 		print("Finished turn.")
+					# Determine angle to turn based on IMU..
+					print("Telling Jackal to turn {} degreess..".format(turn_angle))
+					nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+					print("Finished turn.")
 
 
 

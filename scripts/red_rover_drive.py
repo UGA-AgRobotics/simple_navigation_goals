@@ -256,6 +256,7 @@ class SingleGoalNav(object):
 		print("Initiating drive loop.. Drive distance: {}".format(drive_distance))
 
 		original_turn_angle = turn_angle
+		original_drive_distance = drive_distance
 
 		while drive_distance > self.min_position_tolerance:
 			print("Drive distance to goal: {}".format(drive_distance))
@@ -264,9 +265,15 @@ class SingleGoalNav(object):
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
 
-			curr_angle = nc.get_jackal_rot().jackal_rot
-			turn_angle = -1.0 * orientation_transforms.initiate_angle_transform(A, B)
-			print("Turn angle during drive loop: {}".format(turn_angle))
+			if drive_distance > original_drive_distance + 0.1:
+				# if the drive distance starts to grow instead of shrink, move to next goal point
+				print("Moving away from goal point.. breaking out of drive loop and looking at next goal..")
+				break
+
+
+			# curr_angle = nc.get_jackal_rot().jackal_rot
+			# turn_angle = -1.0 * orientation_transforms.initiate_angle_transform(A, B)
+			# print("Turn angle during drive loop: {}".format(turn_angle))
 
 			# maybe check angle changes to see if it needs to recalculate turn.
 			# the print out above should help determine that..

@@ -255,6 +255,7 @@ class SingleGoalNav(object):
 
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		drive_distance = self.determine_drive_distance(A, B)
+		print("Initiating drive loop.. Drive distance: {}".format(drive_distance))
 		# while self.distance_from_goal < self.min_position_tolerance:
 		while drive_distance > self.min_position_tolerance:
 			rospy.sleep(self.rate)

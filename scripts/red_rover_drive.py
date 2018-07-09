@@ -68,7 +68,7 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		self.look_ahead = 3
+		self.look_ahead = 1.0
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 

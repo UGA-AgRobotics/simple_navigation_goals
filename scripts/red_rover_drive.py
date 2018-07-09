@@ -253,7 +253,7 @@ class SingleGoalNav(object):
 			print("Finished turn.")
 		##########################################################################
 
-
+		curr_pose_utm = nc.get_current_position()
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		drive_distance = self.determine_drive_distance(A, B)
 		print("Initiating drive loop.. Drive distance: {}".format(drive_distance))
@@ -261,6 +261,7 @@ class SingleGoalNav(object):
 		while drive_distance > self.min_position_tolerance:
 			print("Drive distance to goal: {}".format(drive_distance))
 			rospy.sleep(1.0/self.rate)
+			curr_pose_utm = nc.get_current_position()
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
 			

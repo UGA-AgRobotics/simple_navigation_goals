@@ -142,15 +142,14 @@ class SingleGoalNav(object):
 
 		print(">>> Starting drive actuator to drive foward!")
 		nc.throttle_pub.publish(nc.throttle_drive_slow)  # sets to 100
-		# nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 10
-		nc.actuator_pub.publish(20)  # sets to 10
+		nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 20
 
 
 
 
 		# Loop track goals here for each A->B in the course:
-		# for i in range(target_index, len(path_array) - 1):
-		for i in range(0,1):
+		for i in range(target_index, len(path_array) - 1):
+		# for i in range(0,1):
 
 			print ("i: {}".format(i))
 			self.current_goal = path_array[i]
@@ -201,14 +200,13 @@ class SingleGoalNav(object):
 				print ("@@@ new i: {} @@@".format(i))
 			#####################################################################################################
 
-			print("STOPPING SINGLE POINT TEST!")
-			self.shutdown()
-			return  # REMOVE THIS AFTER SINGLE GOAL TESTING !!!!!!!!!!!!!
+			# print("STOPPING SINGLE POINT TEST!")
+			# self.shutdown()
+			# return  # REMOVE THIS AFTER SINGLE GOAL TESTING !!!!!!!!!!!!!
 
 
 
-
-
+		print("Finished driving course..")
 		print("Shutting down Jackal..")
 		self.shutdown()
 
@@ -257,18 +255,21 @@ class SingleGoalNav(object):
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		drive_distance = self.determine_drive_distance(A, B)
 		print("Initiating drive loop.. Drive distance: {}".format(drive_distance))
-		# while self.distance_from_goal < self.min_position_tolerance:
+
 		while drive_distance > self.min_position_tolerance:
 			print("Drive distance to goal: {}".format(drive_distance))
 			rospy.sleep(1.0/self.rate)
 			curr_pose_utm = nc.get_current_position()
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
+
+		print("Arrived at course goal position..")
+		print("Moving on to next goal position..")
 			
 
-		print("Done driving.")
-		print("Stopping rover for this single goal test..")
-		self.shutdown()
+		# print("Done driving.")
+		# print("Stopping rover for this single goal test..")
+		# self.shutdown()
 
 
 		# if drive_distance > 0:

@@ -67,7 +67,7 @@ class NavController(object):
 		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
 		self.actuator_home = 0
 		self.actuator_stop = 0
-		self.actuator_drive_slow = 10  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
+		self.actuator_drive_slow = 20  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
 
 		# Throttle settings (updated 07/05/18):
 		self.throttle_home = 120  # idle state

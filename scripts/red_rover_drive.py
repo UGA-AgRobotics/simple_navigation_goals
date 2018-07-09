@@ -142,7 +142,8 @@ class SingleGoalNav(object):
 
 		print(">>> Starting drive actuator to drive foward!")
 		nc.throttle_pub.publish(nc.throttle_drive_slow)  # sets to 100
-		nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 10
+		# nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 10
+		nc.actuator_pub.publish(20)  # sets to 10
 
 
 

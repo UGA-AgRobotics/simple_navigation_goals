@@ -167,7 +167,7 @@ class SingleGoalNav(object):
 
 
 
-	def p2p_drive_routine(self, goal_pos, np_course):
+	def p2p_drive_routine(self, goal_pos, target_index, np_course):
 		"""
 		The drive routine from point-to-point, whether that's b/w
 		two GPS points on the course, or a step size incrementing a drive

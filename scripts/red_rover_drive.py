@@ -91,6 +91,8 @@ class SingleGoalNav(object):
 			nt = NavTracks()
 			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
 			
+			self.path_array = path_array
+
 			print("The Course: {}".format(path_array))
 			print("Starting path following routine..")
 

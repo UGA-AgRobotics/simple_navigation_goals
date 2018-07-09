@@ -83,6 +83,12 @@ class SingleGoalNav(object):
 			print("The Course: {}".format(path_array))
 			print("Starting path following routine..")
 
+
+			print("Setting throttle and drive actuator to home states..")
+			nc.throttle_pub.publish(nc.throttle_home)
+			nc.actuator_pub.publish(nc.actuator_home)
+
+
 			self.start_path_following(path_array)
 
 
@@ -105,6 +111,12 @@ class SingleGoalNav(object):
 		# Accounting for look-ahead distance:
 		target_index = self.calc_target_index(curr_pose_utm, 0, _np_track[:,0], _np_track[:,1])
 		print("Initial target goal index: {}".format(target_index))
+
+
+
+		# print(">>> Starting drive actuator to drive foward!")
+		# nc.actuator_pub.publish(nc.actuator_drive_slow)
+
 
 
 
@@ -162,7 +174,11 @@ class SingleGoalNav(object):
 			#####################################################################################################
 
 			print("STOPPING SINGLE POINT TEST!")
+			self.shutdown()
 			return  # REMOVE THIS AFTER SINGLE GOAL TESTING !!!!!!!!!!!!!
+
+
+
 
 
 		print("Shutting down Jackal..")
@@ -191,6 +207,14 @@ class SingleGoalNav(object):
 		turn_angle = orientation_transforms.initiate_angle_transform(A, B)
 
 		print("Turn angle, pre-tolerance filter: {}".format(turn_angle))
+
+		turn_angle = -1.0 * turn_angle
+
+
+		print("Flipping direction around as it's the inverse of what is expected!!!")
+		print("New angle: {}".format(turn_angle))
+
+
 
 		if abs(turn_angle) > abs(self.angle_tolerance):
 		# if turn_angle != 0:

@@ -67,6 +67,7 @@ class NavController(object):
 		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
 		self.actuator_home = 0
 		self.actuator_stop = 0
+		self.actuator_drive_slow = 15  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
 
 		# Throttle settings (updated 07/05/18):
 		self.throttle_home = 120  # idle state
@@ -320,6 +321,8 @@ class NavController(object):
 		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
 		self.throttle_pub.publish(self.throttle_home)
+		rospy.sleep(1)
+		self.articulator_pub.publish(self.no_turn_val)
 		rospy.sleep(1)
 		print("Red rover stopped.")
 

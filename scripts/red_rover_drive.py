@@ -19,6 +19,8 @@ import json
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import numpy as np
+from sensor_msgs.msg import Imu
+from geometry_msgs.msg import Quaternion
 
 # Local package requirements:
 from nav_tracks import NavTracks
@@ -49,6 +51,7 @@ class SingleGoalNav(object):
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
 		# rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
+		# rospy.Subscriber('/phidget/imu/data', Imu, rot_callback_imu, queue_size=1)
 		
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
@@ -61,35 +64,17 @@ class SingleGoalNav(object):
 
 		# self.nav_controller = NavController()  # module that handles driving and turning routines
 
-		self.angle_tolerance = 2.0  # angle tolerance in degrees
+		self.angle_tolerance = 1.0  # angle tolerance in degrees
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		self.look_ahead = 0.5
+		self.look_ahead = 3
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
 		self.current_goal = [0,0]  # [easting, northing] array
 		self.current_pos = [0,0]  # [easting, northing] array
-
-
-
-	# def rover_position_callback(self, msg):
-	# 	"""
-	# 	Keeps track of GPS position and compares distance to current
-	# 	goal point.
-	# 	"""
-	# 	curr_pose_utm = utm.from_latlon(msg.latitude, msg.longitude)
-	# 	self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
-
-	# 	# check distance to current goal. set goal to next one if
-	# 	# the rover has reached the current goal. if it's the last goal,
-	# 	# stop the rover.
-
-	# 	self.distance_from_goal = self.determine_drive_distance(self.current_pos, self.current_goal)
-	# 	# print("Distance from goal: {}".format(self.distance_from_goal))
-
-
+		self.current_angle = 0.0
 
 
 
@@ -148,20 +133,11 @@ class SingleGoalNav(object):
 
 		# Loop track goals here for each A->B in the course:
 		for i in range(target_index, len(path_array) - 1):
-		# for i in range(0,1):
+		
+			target_index = i
 
 			print ("i: {}".format(i))
 			self.current_goal = path_array[i]
-
-			future_goal = None
-			try:
-				future_goal = path_array[i + 1]
-			except IndexError as e:
-				print("Current goal is the last one in the course!")
-
-			goal_orientation = orientation_transforms.determine_angle_at_goal(self.current_goal, future_goal)
-
-
 
 			curr_pose_utm = nc.get_current_position()  # returns NavSatFix type of position
 			curr_angle = nc.get_jackal_rot().jackal_rot  # returns float64 of angle in radians, i think
@@ -169,12 +145,10 @@ class SingleGoalNav(object):
 			print("Angle from jackal rotation service (i.e., not odom rotation value): {}".format(curr_angle))
 			print("Same angle, but in degrees: {}".format(degrees(curr_angle)))
 
-
 			transformed_angle = orientation_transforms.transform_imu_frame(degrees(curr_angle))
 
 			A = (curr_pose_utm[0], curr_pose_utm[1], radians(transformed_angle))  # initial position of jackal
-			B = (self.current_goal[0], self.current_goal[1], goal_orientation)
-
+			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B orientation is irrelevant
 
 			drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
 
@@ -184,25 +158,7 @@ class SingleGoalNav(object):
 				continue  # skip to next iteration in track for loop
 
 			self.current_goal = B  # TODO: organize this..
-			self.p2p_drive_routine(self.current_goal)  # main drive routine0
-
-
-			# NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??
-			#####################################################################################################
-			curr_pose_utm = nc.get_current_position()
-			new_target_index = self.calc_target_index(curr_pose_utm, target_index, _np_track[:,0], _np_track[:,1])
-			print("Target index: {}".format(new_target_index))
-			if new_target_index > target_index:
-				print(">>> Jackal is within look-ahead distance of goal, starting to drive toward next goal now..")
-				target_index = new_target_index
-				i = target_index
-				print ("@@@ new i: {} @@@".format(i))
-			#####################################################################################################
-
-			# print("STOPPING SINGLE POINT TEST!")
-			# self.shutdown()
-			# return  # REMOVE THIS AFTER SINGLE GOAL TESTING !!!!!!!!!!!!!
-
+			self.p2p_drive_routine(self.current_goal, target_index, _np_track)  # main drive routine0
 
 
 		print("Finished driving course..")
@@ -211,7 +167,7 @@ class SingleGoalNav(object):
 
 
 
-	def p2p_drive_routine(self, goal_pos):
+	def p2p_drive_routine(self, goal_pos, np_course):
 		"""
 		The drive routine from point-to-point, whether that's b/w
 		two GPS points on the course, or a step size incrementing a drive
@@ -226,33 +182,22 @@ class SingleGoalNav(object):
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
 
-		# NOTE: perhaps add angle tolerance here, e.g., if turn_angle is
-		# 0 +/- angle_tolerance, then don't turn the rover!
-		##########################################################################
 		turn_angle = orientation_transforms.initiate_angle_transform(A, B)
-
 		print("Turn angle, pre-tolerance filter: {}".format(turn_angle))
-
 		turn_angle = -1.0 * turn_angle
-
 
 		print("Flipping direction around as it's the inverse of what is expected!!!")
 		print("New angle: {}".format(turn_angle))
 
-
-
 		if abs(turn_angle) > abs(self.angle_tolerance):
 
-
 			if turn_angle < -22:
-				turn_angle = -22
+				turn_angle = -10
 			elif turn_angle > 22:
-				turn_angle = 22
+				turn_angle = 10
 
-		# if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
-			# nc.execute_turn(radians(turn_angle))
 			nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 			print("Finished turn.")
 
@@ -265,39 +210,60 @@ class SingleGoalNav(object):
 		original_turn_angle = turn_angle
 		original_drive_distance = drive_distance
 
+
+		loop_period = 1.0 / self.rate
+		turn_check_counter = 0
+
 		while drive_distance > self.min_position_tolerance:
+
 			print("Drive distance to goal: {}".format(drive_distance))
-			rospy.sleep(1.0/self.rate)
+
+			rospy.sleep(loop_period)
+
 			curr_pose_utm = nc.get_current_position()
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
+
+			# if turn_check_counter % self.rate:
+			# 	# hits this every conditional every 1 second
+			# 	print("Checking turn angle relative to look-ahead..")
+			# 	# calculates index to a new look ahead to calculate turn angle:
+			# 	target_index = self.calc_target_index(A, target_index, np_course[:,0], np_course[:,1])
+
+			# 	A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
+			# 	B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
+
+			# 	future_goal = self.path_array[target_index]  # get goal look-ahead away to determine turn
+
+			# 	turn_angle = orientation_transforms.initiate_angle_transform(A, self.path_array[target_index])
+			# 	turn_angle = -1.0 * turn_angle
+
+			# 	if abs(turn_angle) > abs(self.angle_tolerance):
+					
+			# 		if turn_angle < -22:
+			# 			turn_angle = -10
+			# 		elif turn_angle > 22:
+			# 			turn_angle = 10
+
+			# 		# Determine angle to turn based on IMU..
+			# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))
+			# 		nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+			# 		print("Finished turn.")
+
+
+
 
 			if drive_distance > original_drive_distance + 0.1:
 				# if the drive distance starts to grow instead of shrink, move to next goal point
 				print("Moving away from goal point.. breaking out of drive loop and looking at next goal..")
 				break
 
-
-			# curr_angle = nc.get_jackal_rot().jackal_rot
-			# turn_angle = -1.0 * orientation_transforms.initiate_angle_transform(A, B)
-			# print("Turn angle during drive loop: {}".format(turn_angle))
-
-			# maybe check angle changes to see if it needs to recalculate turn.
-			# the print out above should help determine that..
+			turn_check_counter += 1
 
 
 		print("Arrived at course goal position..")
 		print("Moving on to next goal position..")
-			
-
-		# print("Done driving.")
-		# print("Stopping rover for this single goal test..")
-		# self.shutdown()
-
-
-		# if drive_distance > 0:
-		# 	nc.drive_forward(drive_distance, self.look_ahead)
-
+		
 
 
 	def calc_target_index(self, current_position, current_goal_index, cx, cy):

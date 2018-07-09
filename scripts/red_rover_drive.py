@@ -177,7 +177,7 @@ class SingleGoalNav(object):
 			B = (self.current_goal[0], self.current_goal[1], goal_orientation)
 
 
-			# drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
+			drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
 
 			# Skips to next goal/course point if said goal is less than look-ahead:
 			if drive_distance < self.look_ahead:

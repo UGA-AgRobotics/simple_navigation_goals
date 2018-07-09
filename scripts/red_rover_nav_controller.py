@@ -67,12 +67,13 @@ class NavController(object):
 		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
 		self.actuator_home = 0
 		self.actuator_stop = 0
-		self.actuator_drive_slow = 15  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
+		self.actuator_drive_slow = 10  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
 
 		# Throttle settings (updated 07/05/18):
 		self.throttle_home = 120  # idle state
 		self.throttle_min = 120  # lowest throttle state
 		self.throttle_max = 60  # full throttle!
+		self.throttle_drive_slow = 100  # throttle setting for slow driving??	
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left

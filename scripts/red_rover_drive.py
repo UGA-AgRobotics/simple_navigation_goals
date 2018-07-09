@@ -65,7 +65,7 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		self.look_ahead = 1.0
+		self.look_ahead = 0.5
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
@@ -143,7 +143,6 @@ class SingleGoalNav(object):
 		print(">>> Starting drive actuator to drive foward!")
 		nc.throttle_pub.publish(nc.throttle_drive_slow)  # sets to 100
 		nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 20
-
 
 
 
@@ -249,12 +248,14 @@ class SingleGoalNav(object):
 			# nc.execute_turn(radians(turn_angle))
 			nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 			print("Finished turn.")
-		##########################################################################
+
 
 		curr_pose_utm = nc.get_current_position()
 		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 		drive_distance = self.determine_drive_distance(A, B)
 		print("Initiating drive loop.. Drive distance: {}".format(drive_distance))
+
+		original_turn_angle = turn_angle
 
 		while drive_distance > self.min_position_tolerance:
 			print("Drive distance to goal: {}".format(drive_distance))
@@ -262,6 +263,14 @@ class SingleGoalNav(object):
 			curr_pose_utm = nc.get_current_position()
 			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
 			drive_distance = self.determine_drive_distance(A, B)
+
+			curr_angle = nc.get_jackal_rot().jackal_rot
+			turn_angle = -1.0 * orientation_transforms.initiate_angle_transform(A, B)
+			print("Turn angle during drive loop: {}".format(turn_angle))
+
+			# maybe check angle changes to see if it needs to recalculate turn.
+			# the print out above should help determine that..
+
 
 		print("Arrived at course goal position..")
 		print("Moving on to next goal position..")

@@ -12,6 +12,7 @@ import roslib
 import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
+from sensor_msgs.msg import NavSatFix
 from simple_navigation_goals.srv import *
 import math
 import json
@@ -47,15 +48,16 @@ class SingleGoalNav(object):
 
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+		# rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
 
 		# How fast will we check the odometry values?
-		rate = 20
+		self.rate = 10
 		
 		# Set the equivalent ROS rate variable
-		self.r = rospy.Rate(rate)
+		self.r = rospy.Rate(self.rate)
 
 		# self.nav_controller = NavController()  # module that handles driving and turning routines
 
@@ -64,6 +66,30 @@ class SingleGoalNav(object):
 		self.path_json = path_json  # The path/course the red rover will follow!
 
 		self.look_ahead = 1.0
+		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
+		self.distance_from_goal = 0.0
+
+		self.current_goal = [0,0]  # [easting, northing] array
+		self.current_pos = [0,0]  # [easting, northing] array
+
+
+
+	# def rover_position_callback(self, msg):
+	# 	"""
+	# 	Keeps track of GPS position and compares distance to current
+	# 	goal point.
+	# 	"""
+	# 	curr_pose_utm = utm.from_latlon(msg.latitude, msg.longitude)
+	# 	self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
+
+	# 	# check distance to current goal. set goal to next one if
+	# 	# the rover has reached the current goal. if it's the last goal,
+	# 	# stop the rover.
+
+	# 	self.distance_from_goal = self.determine_drive_distance(self.current_pos, self.current_goal)
+	# 	# print("Distance from goal: {}".format(self.distance_from_goal))
+
+
 
 
 
@@ -126,7 +152,7 @@ class SingleGoalNav(object):
 		for i in range(0,1):
 
 			print ("i: {}".format(i))
-			current_goal = path_array[i]
+			self.current_goal = path_array[i]
 
 			future_goal = None
 			try:
@@ -134,7 +160,7 @@ class SingleGoalNav(object):
 			except IndexError as e:
 				print("Current goal is the last one in the course!")
 
-			goal_orientation = orientation_transforms.determine_angle_at_goal(current_goal, future_goal)
+			goal_orientation = orientation_transforms.determine_angle_at_goal(self.current_goal, future_goal)
 
 
 
@@ -148,18 +174,18 @@ class SingleGoalNav(object):
 			transformed_angle = orientation_transforms.transform_imu_frame(degrees(curr_angle))
 
 			A = (curr_pose_utm[0], curr_pose_utm[1], radians(transformed_angle))  # initial position of jackal
-			B = (current_goal[0], current_goal[1], goal_orientation)
+			B = (self.current_goal[0], self.current_goal[1], goal_orientation)
 
 
-			drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
+			# drive_distance = self.determine_drive_distance(A, B)  # get drive distance from current position to goal
 
 			# Skips to next goal/course point if said goal is less than look-ahead:
 			if drive_distance < self.look_ahead:
 				print("Within look-ahead of goal, so skipping to next goal")
 				continue  # skip to next iteration in track for loop
 
-			current_goal = B  # TODO: organize this..
-			self.p2p_drive_routine(current_goal)  # main drive routine
+			self.current_goal = B  # TODO: organize this..
+			self.p2p_drive_routine(self.current_goal)  # main drive routine
 
 
 			# NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??
@@ -226,7 +252,20 @@ class SingleGoalNav(object):
 			print("Finished turn.")
 		##########################################################################
 
-		# drive_distance = self.determine_drive_distance(A, B)
+
+		A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
+		drive_distance = self.determine_drive_distance(A, B)
+		# while self.distance_from_goal < self.min_position_tolerance:
+		while drive_distance > self.min_position_tolerance:
+			rospy.sleep(self.rate)
+			A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
+			drive_distance = self.determine_drive_distance(A, B)
+			print("Drive distance to goal: {}".format(drive_distance))
+
+		print("Done driving.")
+		print("Stopping rover for this single goal test..")
+		self.shutdown()
+
 
 		# if drive_distance > 0:
 		# 	nc.drive_forward(drive_distance, self.look_ahead)

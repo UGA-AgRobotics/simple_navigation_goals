@@ -241,13 +241,15 @@ class SingleGoalNav(object):
 
 
 
-		if abs(turn_angle) > abs(self.angle_tolerance):
+		if abs(turn_angle) > abs(self.angle_tolerance) and turn_angle < abs(25):
 		# if turn_angle != 0:
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
 			# nc.execute_turn(radians(turn_angle))
 			nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 			print("Finished turn.")
+		else:
+			print("skipping turn, turn_angle: {}".format(turn_angle))
 
 
 		curr_pose_utm = nc.get_current_position()

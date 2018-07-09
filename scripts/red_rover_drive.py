@@ -72,7 +72,7 @@ class SingleGoalNav(object):
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
-		self.angle_trim = 3.0  # (in degrees)
+		self.angle_trim = 5.0  # (in degrees)
 
 		self.current_goal = [0,0]  # [easting, northing] array
 		self.current_pos = [0,0]  # [easting, northing] array

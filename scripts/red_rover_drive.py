@@ -72,6 +72,8 @@ class SingleGoalNav(object):
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
+		self.angle_trim = 3.0  # (in degrees)
+
 		self.current_goal = [0,0]  # [easting, northing] array
 		self.current_pos = [0,0]  # [easting, northing] array
 		self.current_angle = 0.0
@@ -193,10 +195,10 @@ class SingleGoalNav(object):
 
 		if abs(turn_angle) > abs(self.angle_tolerance):
 
-			if turn_angle < -10:
-				turn_angle = -10
-			elif turn_angle > 10:
-				turn_angle = 10
+			if turn_angle < -self.angle_trim:
+				turn_angle = -self.angle_trim
+			elif turn_angle > self.angle_trim:
+				turn_angle = self.angle_trim
 
 			# Determine angle to turn based on IMU..
 			print("Telling Jackal to turn {} degreess..".format(turn_angle))
@@ -241,10 +243,10 @@ class SingleGoalNav(object):
 
 			# 	if abs(turn_angle) > abs(self.angle_tolerance):
 					
-			# 		if turn_angle < -22:
-			# 			turn_angle = -10
-			# 		elif turn_angle > 22:
-			# 			turn_angle = 10
+			# 		if turn_angle < -self.angle_trim:
+			# 			turn_angle = -self.angle_trim
+			# 		elif turn_angle > self.angle_trim:
+			# 			turn_angle = self.angle_trim
 
 			# 		# Determine angle to turn based on IMU..
 			# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))

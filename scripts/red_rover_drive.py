@@ -65,7 +65,7 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		self.look_ahead = 0.5
+		self.look_ahead = 1.0
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
@@ -184,7 +184,7 @@ class SingleGoalNav(object):
 				continue  # skip to next iteration in track for loop
 
 			self.current_goal = B  # TODO: organize this..
-			self.p2p_drive_routine(self.current_goal)  # main drive routine
+			self.p2p_drive_routine(self.current_goal)  # main drive routine0
 
 
 			# NOTE: IS THIS SECTION ACTUALLY NEEDED/USEFUL??

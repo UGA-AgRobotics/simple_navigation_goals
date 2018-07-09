@@ -191,9 +191,9 @@ class SingleGoalNav(object):
 
 		if abs(turn_angle) > abs(self.angle_tolerance):
 
-			if turn_angle < -22:
+			if turn_angle < -10:
 				turn_angle = -10
-			elif turn_angle > 22:
+			elif turn_angle > 10:
 				turn_angle = 10
 
 			# Determine angle to turn based on IMU..

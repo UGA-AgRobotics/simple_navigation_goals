@@ -59,15 +59,14 @@ class SingleGoalNav(object):
 		print("start_sample_collection service ready.")
 
 
-		try:
-			test_val = self.start_sample_collection(2)
-			print("val returned: {}".format(test_val.end_sample))
-		except rospy.ServiceException as e:
-			print("an exception happend.")
-			print("exception: {}".format(e))
+		# try:
+		# 	test_val = self.start_sample_collection(2)
+		# 	print("val returned: {}".format(test_val.end_sample))
+		# except rospy.ServiceException as e:
+		# 	print("an exception happend.")
+		# 	print("exception: {}".format(e))
 
-
-		return
+		# return
 
 
 
@@ -152,6 +151,15 @@ class SingleGoalNav(object):
 			if not self.path_json:
 				print("Waiting for drive node to be started..")
 				return
+
+
+			try:
+				test_val = self.start_sample_collection(2)
+				print("val returned: {}".format(test_val.end_sample))
+			except rospy.ServiceException as e:
+				print("an exception happend.")
+				print("exception: {}".format(e))
+
 
 			# Gets track to follow:
 			nt = NavTracks()

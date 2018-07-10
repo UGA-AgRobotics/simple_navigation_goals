@@ -131,6 +131,7 @@ class SingleGoalNav(object):
 		NOTE: Does the target index need to increment here and/or turn loop?
 
 		"""
+		print("Rover position callback: {}".format(msg))
 
 		if not self.current_goal:
 			return  # wait until a goal is set

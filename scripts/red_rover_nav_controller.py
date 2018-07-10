@@ -285,14 +285,14 @@ class NavController(object):
 
 
 
-	def get_current_position(self):
-		"""
-		Calls jackal_pos_server and converts the NavSatFix type
-		into UTM format.
-		"""
-		curr_pose = self.get_jackal_pos()
-		curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-		return curr_pose_utm
+	# def get_current_position(self):
+	# 	"""
+	# 	Calls jackal_pos_server and converts the NavSatFix type
+	# 	into UTM format.
+	# 	"""
+	# 	curr_pose = self.get_jackal_pos()
+	# 	curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
+	# 	return curr_pose_utm
 
 
 

@@ -188,6 +188,8 @@ class SingleGoalNav(object):
 		self.current_goal = self.path_array[self.target_index]  # sets current goal
 
 
+		print("Initial target index: {}".format(self.target_index))
+
 
 		_curr_utm = self.current_pos
 		# self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
@@ -333,6 +335,15 @@ class SingleGoalNav(object):
 		self.articulator_pub.publish(self.no_turn_val)  # stop turning once goal angle is reached.
 
 		return
+
+
+	def normalize_angle(self, angle):
+		res = angle
+		while res > pi:
+			res -= 2.0 * pi
+		while res < -pi:
+			res += 2.0 * pi
+		return res
 
 
 

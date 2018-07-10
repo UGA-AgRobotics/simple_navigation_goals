@@ -59,7 +59,15 @@ class SingleGoalNav(object):
 
 		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
+
+		print("setting path json..")
+
 		self.path_json = path_json  # The path/course the red rover will follow!
+
+
+		print("path json set: {}".format(self.path_json))
+
+
 		self.path_array = None  # path converted to list of [easting, northing]
 
 		self.look_ahead = 3.0  # meters
@@ -103,6 +111,10 @@ class SingleGoalNav(object):
 		to drive and follow the course.
 		"""
 		if msg.data == True:
+
+			if not self.path_json:
+				print("Waiting for drive node to be started..")
+				return
 
 			# Gets track to follow:
 			nt = NavTracks()
@@ -189,6 +201,7 @@ class SingleGoalNav(object):
 
 
 		print("Initial target index: {}".format(self.target_index))
+		print("Total length of path array: {}".format(len(self.path_array)))
 
 
 		_curr_utm = self.current_pos
@@ -199,10 +212,10 @@ class SingleGoalNav(object):
 		print("Initial goal: {}".format(self.current_goal))
 
 
-		# Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
-		print("Starting driving routine.")
+		# # Sleep routine for testing:
+		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		# rospy.sleep(10)
+		# print("Starting driving routine.")
 
 
 
@@ -212,6 +225,13 @@ class SingleGoalNav(object):
 		rospy.sleep(2)
 
 		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
+
+
+
+
+		# return
+
+
 
 
 		###################################################################
@@ -225,11 +245,22 @@ class SingleGoalNav(object):
 
 
 			_curr_utm = self.current_pos  # gets current utm
+
+			print("Current UTM in nav loop: {}".format(_curr_utm))
 			
 			# using goal a look ahead away for calculating turn angle
 
+			print("Calculating new target index..")
+
 			# _target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
+			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+
+			# print("target index: {}".format(self.target_index))
+			print("target index: {}".format(self.target_index))
+
 
 			if not self.target_index:
 				print("Assuming end of course is reached! Stopping rover.")
@@ -270,8 +301,11 @@ class SingleGoalNav(object):
 		"""
 		From red_rover_model pure_puruit module. Loops through course
 		points (x and y) and builds a list of the diff b/w robot's position and
-		each x and y in the course. Finally, 
-		"""
+		each x and y in t{he course. Finally, 
+				"""
+		# print("Inside calc target index function.")
+		# print("Current poisition: {}".format(current_position))
+		# print("Current goal index: {}".format(current_goal_index))
 
 		# note: numpy seems to return blank array if out of index, so
 		# it should return None at end of course.
@@ -281,12 +315,25 @@ class SingleGoalNav(object):
 
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
-		# print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
+		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
+
+		# print("distances: {}".format(d))
 
 		ind = 0
 		for pos_diff in d:
 			if pos_diff > self.look_ahead:
-				return d.index(pos_diff)  # return index of goal to go to
+
+				# below gets the index in this segment of course, but the
+				# index relative to the whole course needs to be returned..
+				# return d.index(pos_diff)  # return index of goal to go to
+
+				_index = d.index(pos_diff)
+				goal_index = current_goal_index + _index  # return index of goal in the whole course
+
+				return goal_index
+
+
+
 			ind += 1
 
 		return None

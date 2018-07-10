@@ -176,14 +176,16 @@ class SingleGoalNav(object):
 			rospy.sleep(1)
 			print("Waiting for GPS data from /fix topic..")
 
+
+		self.np_course = np.array(path_array)  # sets numpy array of course
+
+
 		rospy.sleep(2)  # give messages time to publish
 
 
 		_curr_utm = self.current_pos
 		self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
 		self.current_goal = self.path_array[self.target_index]  # sets current goal
-
-		self.np_course = np.array(path_array)  # sets numpy array of course
 
 
 

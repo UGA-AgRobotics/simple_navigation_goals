@@ -42,7 +42,8 @@ class SingleGoalNav(object):
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
-		
+		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
+
 		# Publishers:
 		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
 		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
@@ -70,9 +71,9 @@ class SingleGoalNav(object):
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
-		self.look_ahead = 3.0  # meters
+		self.look_ahead = 1.5  # meters
 
-		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
+		self.angle_trim = 3.0  # max angle inc per iteration (in degrees)
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
@@ -100,6 +101,19 @@ class SingleGoalNav(object):
 		self.np_course = None  # lazy np array version of course for certain manipulations
 
 		self.at_flag = False  # todo: subscribe to at_flag topic?
+
+
+
+	def flag_callback(self, flag_msg):
+		"""
+		Subscribes to /at_flag topic that's being published by
+		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
+		"""
+		if flag_msg.data == True or flag_msg == True:
+			print("Stopping cause we're at the flag!!!")
+			self.at_flag = True  # sets main at_flag to True for robot..
+		else:
+			self.at_flag = False
 
 
 
@@ -212,10 +226,10 @@ class SingleGoalNav(object):
 		print("Initial goal: {}".format(self.current_goal))
 
 
-		# # Sleep routine for testing:
-		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		# rospy.sleep(10)
-		# print("Starting driving routine.")
+		# Sleep routine for testing:
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		rospy.sleep(10)
+		print("Starting driving routine.")
 
 
 
@@ -238,7 +252,14 @@ class SingleGoalNav(object):
 		# This loop calculates a turn angle a look-ahead distance away,
 		# then begins to execute the turn.
 		###################################################################
-		while not rospy.is_shutdown():
+		while not rospy.is_shutdown() and not self.at_flag:
+
+			if self.at_flag:
+				print("At a flag in the course! Stopping the rover to take a sample.")
+				rospy.sleep(0.1)
+				self.articulator_pub.publish(self.actuator_stop)
+				break
+
 
 			# rospy.sleep(1/self.rate)  # sleep for 100ms
 			rospy.sleep(0.2)
@@ -262,7 +283,7 @@ class SingleGoalNav(object):
 			print("target index: {}".format(self.target_index))
 
 
-			if not self.target_index:
+			if self.target_index == None:
 				print("Assuming end of course is reached! Stopping rover.")
 				self.shutdown()
 
@@ -289,6 +310,39 @@ class SingleGoalNav(object):
 				# self.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 				self.translate_angle_with_imu(turn_angle)
 				print("Finished turn.")
+
+
+		if self.at_flag:
+			# broke out of drive loop because it's at the flag.
+			# make sure actuator is set to stop.
+			print("Making sure rover is stopped, then making request to take a sample..")
+			rospy.sleep(0.1)
+			self.actuator_pub.publish(self.actuator_stop)
+
+			# call sample collector service here..
+			print("Pausing 10s to simulate a sample collection routine..")
+			rospy.sleep(10)
+
+			_curr_utm = self.current_pos
+			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+			print("New target index: {}".format(self.target_index))
+
+			rospy.sleep(1)
+
+			updated_path = self.path_array[self.target_index:]  # set remaining path to follow
+
+			rospy.sleep(1)
+
+			self.at_flag = False  # set at_flag to False after sample is collected..
+
+			# start following path again:
+			print("Starting path following again..")
+			rospy.sleep(1)
+			self.start_path_following(updated_path)
+
+
+
 
 
 		print("Finished driving course..")

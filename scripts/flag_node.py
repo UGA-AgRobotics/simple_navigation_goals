@@ -75,13 +75,13 @@ class FlagHandler:
 		nt = nav_tracks.NavTracks()
 		
 		# For geojson flags:
-		# flags_array = nt.get_flags_from_geojson(flags_obj)
+		flags_array = nt.get_flags_from_geojson(flags_obj)
 
-		# For json flags:
-		fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
-		fh.flags = flags_obj
-		fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
-		flags_array = nt.get_track_from_course(fh.flags)  # for json flags
+		# # For json flags:
+		# fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
+		# fh.flags = flags_obj
+		# fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
+		# flags_array = nt.get_track_from_course(fh.flags)  # for json flags
 
 
 		print("Flags: {}".format(flags_array))

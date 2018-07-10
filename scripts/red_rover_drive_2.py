@@ -175,14 +175,16 @@ class SingleGoalNav(object):
 			print("Waiting for GPS data from /fix topic..")
 
 
+		self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+		self.current_goal = self.path_array[self.target_index]  # sets current goal
 
 		self.np_course = np.array(path_array)  # sets numpy array of course
 
 
 
 		_curr_utm = self.current_pos
-		self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
-		self.current_goal = self.path_array[self.target_index]  # sets current goal
+		# self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+		# self.current_goal = self.path_array[self.target_index]  # sets current goal
 
 		print("Initial target goal index: {}".format(self.target_index))
 		print("Initial goal: {}".format(self.current_goal))

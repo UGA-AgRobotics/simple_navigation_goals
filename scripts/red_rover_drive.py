@@ -64,11 +64,12 @@ class SingleGoalNav(object):
 
 		# self.nav_controller = NavController()  # module that handles driving and turning routines
 
-		self.angle_tolerance = 1.0  # angle tolerance in degrees
+		self.angle_tolerance = 0.5  # angle tolerance in degrees
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
 		self.look_ahead = 3.0
+
 		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
 		self.distance_from_goal = 0.0
 
@@ -131,6 +132,7 @@ class SingleGoalNav(object):
 
 		print(">>> Starting drive actuator to drive foward!")
 		nc.throttle_pub.publish(nc.throttle_drive_slow)  # sets to 100
+		rospy.sleep(2)
 		nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 20
 
 
@@ -168,6 +170,11 @@ class SingleGoalNav(object):
 		print("Finished driving course..")
 		print("Shutting down Jackal..")
 		self.shutdown()
+
+
+
+	def continuous_drive_routine(self):
+		pass
 
 
 

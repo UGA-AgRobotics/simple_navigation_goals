@@ -47,15 +47,15 @@ class NavController(object):
 		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
 		# print("start_sample_collection service ready.")
 
-		print("Waiting for get_jackal_pos service..")
-		rospy.wait_for_service('get_jackal_pos')
-		self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
-		print("get_jackal_pos service ready.")
+		# print("Waiting for get_jackal_pos service..")
+		# rospy.wait_for_service('get_jackal_pos')
+		# self.get_jackal_pos = rospy.ServiceProxy('get_jackal_pos', JackalPos)
+		# print("get_jackal_pos service ready.")
 
-		print("Waiting for get_jackal_rot service..")
-		rospy.wait_for_service('get_jackal_rot')
-		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		print("get_jackal_rot service ready.")
+		# print("Waiting for get_jackal_rot service..")
+		# rospy.wait_for_service('get_jackal_rot')
+		# self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+		# print("get_jackal_rot service ready.")
 		#############################################################################
 
 
@@ -318,7 +318,7 @@ class NavController(object):
 
 
 	def shutdown_all(self):
-		print("Shutting down rover, stopping drive, lowering throttle rpms..")
+		print("Shutting down rover: stopping drive, lowering throttle rpms..")
 		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
 		self.throttle_pub.publish(self.throttle_home)

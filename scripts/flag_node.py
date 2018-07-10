@@ -127,7 +127,6 @@ class FlagHandler:
 			if self.flag_index >= len(self.flags) - 1:
 				print(">>> Finished driving to flags list.")
 				print(">>> Continuing the rest of the row.")
-				# self.flag_publisher.publish(False)
 				self.flag_run_complete = True
 				rospy.sleep(0.5)
 				self.flag_publisher.publish(False)

@@ -227,7 +227,7 @@ class SingleGoalNav(object):
 			# using goal a look ahead away for calculating turn angle
 
 			# _target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
-			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
+			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
 			if not self.target_index:
 				print("Assuming end of course is reached! Stopping rover.")

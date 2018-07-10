@@ -33,11 +33,11 @@ class ArticulatorTestNode:
 		# print("Waiting for get_red_rover_rot service..")
 		# rospy.wait_for_service('get_red_rover_rot')
 		# self.get_red_rover_rot = rospy.ServiceProxy('get_red_rover_rot', RedRoverRot)
-		# print("get_red_rover_rot service ready.")
-		print("Waiting for get_jackal_rot service..")
-		rospy.wait_for_service('get_jackal_rot')
-		self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		print("get_jackal_rot service ready.")
+		# # print("get_red_rover_rot service ready.")
+		# print("Waiting for get_jackal_rot service..")
+		# rospy.wait_for_service('get_jackal_rot')
+		# self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
+		# print("get_jackal_rot service ready.")
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left

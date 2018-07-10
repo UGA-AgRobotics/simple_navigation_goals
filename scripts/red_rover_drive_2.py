@@ -3,7 +3,7 @@
 import roslib
 import rospy
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float64
 from sensor_msgs.msg import NavSatFix
 from simple_navigation_goals.srv import *
 import math

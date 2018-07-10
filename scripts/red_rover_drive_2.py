@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-"""
-This drive routine is the same as basic_drive_5.py, but taking out the odom and base frames
-that I believe are related to the turtlebot. The course will be tested again (course 9, etc.)
-using just the IMU and GPS for navigation.
-"""
-
-
-
 import roslib
 import rospy
 from geometry_msgs.msg import Twist
@@ -29,19 +21,16 @@ import orientation_transforms
 
 
 
-nc = NavController()
+# nc = NavController()
 
 
 
 class SingleGoalNav(object):
 	"""
-	Testing Jackal navigation to a single goal/flag. Determines
-	X and Y distance to travel using its GPS location and flag's 
-	location, both converted to UTM.
+	Testing Rover navigation.
+	Drives based on rover's position, a look-ahead goal in a course,
+	and its orientatiion. Subscribes to GPS and IMU topics.
 	"""
-
-	# nc = NavController()
-
 
 	def __init__(self, path_json=None):
 		
@@ -53,6 +42,11 @@ class SingleGoalNav(object):
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
 		
+		# Publishers:
+		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
+		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
+		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
+
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
 
@@ -62,19 +56,32 @@ class SingleGoalNav(object):
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(self.rate)
 
-		# self.nav_controller = NavController()  # module that handles driving and turning routines
-
-		self.angle_tolerance = 0.5  # angle tolerance in degrees
+		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 		self.path_array = None  # path converted to list of [easting, northing]
 
-		self.look_ahead = 3.0
+		self.look_ahead = 3.0  # meters
 
-		self.min_position_tolerance = 0.2  # min distance from goal to move on to next one
-		self.distance_from_goal = 0.0
+		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
-		self.angle_trim = 5.0  # (in degrees)
+		# Articulation settings:
+		self.turn_left_val = 0  # publish this value to turn left
+		self.turn_right_val = 2  # publish this value to turn right
+		self.no_turn_val = 1  # publish this value to not turn??????
+
+		# Actuator settings:
+		self.actuator_min = -25  # accounting for scale factor on arduino (65 - 90) + 1 !!TEST THIS ONE!!
+		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
+		self.actuator_home = 0
+		self.actuator_stop = 0
+		self.actuator_drive_slow = 20  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
+
+		# Throttle settings (updated 07/05/18):
+		self.throttle_home = 120  # idle state
+		self.throttle_min = 120  # lowest throttle state
+		self.throttle_max = 60  # full throttle!
+		self.throttle_drive_slow = 100  # throttle setting for slow driving??
 
 		self.target_index = None  # index in course that's the goal position
 		self.current_goal = None  # [easting, northing] array
@@ -82,6 +89,8 @@ class SingleGoalNav(object):
 		self.current_angle = None  # angle from imu in radians
 
 		self.np_course = None  # lazy np array version of course for certain manipulations
+
+		self.at_flag = False  # todo: subscribe to at_flag topic?
 
 
 
@@ -103,11 +112,9 @@ class SingleGoalNav(object):
 			print("The Course: {}".format(path_array))
 			print("Starting path following routine..")
 
-
 			print("Setting throttle and drive actuator to home states..")
-			nc.throttle_pub.publish(nc.throttle_home)
-			nc.actuator_pub.publish(nc.actuator_home)
-
+			self.throttle_pub.publish(self.throttle_home)
+			self.actuator_pub.publish(self.actuator_home)
 
 			self.start_path_following(path_array)
 
@@ -120,6 +127,9 @@ class SingleGoalNav(object):
 		It also checks the rover's distance between its current
 		position and the goal position in the course. Moves to
 		next goal in course if rover is within look ahead distance.
+
+		NOTE: Does the target index need to increment here and/or turn loop?
+
 		"""
 
 		if not self.current_goal:
@@ -131,46 +141,12 @@ class SingleGoalNav(object):
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
 
 
-		# compare current pos with current goal:
-
-		_curr_utm = self.current_pos  # gets current position from GPS
-		_curr_goal = self.current_goal  # gets current goal in course
-		drive_distance = self.determine_drive_distance(_curr_utm, _curr_goal)  # gets distance b/w
-
-		if drive_distance < self.look_ahead:
-
-			print("target index, path array length: {}, {}".format(self.target_index, self.path_array))
-
-			# check to see if at end of course:
-			if self.target_index >= len(self.path_array) - 1:
-				# need the -1?
-				print("At end of course! Stopping the rover.")
-				self.shutdown()
-				return
-
-
-			print("Drive distance is less than look ahead, setting new goal in course.")
-			print("GPS callback incrementing target index.")
-			self.target_index += 1  # increments target index
-			self.current_goal = self.path_array[self.target_index]  # sets new goal
-			print("New goal: {}".format(self.current_goal))
-
-
-
-		# if within look-ahead, what do next?
-
-
-		# do flag stuff here? or keep flag node?
-
-
-
 
 	def rover_imu_callback(self, msg):
 		"""
 		Angle from IMU in radians.
 		"""
-		self.current_angle = quat_to_angle(msg.orientation)
-
+		self.current_angle = self.quat_to_angle(msg.orientation)
 
 
 
@@ -180,9 +156,6 @@ class SingleGoalNav(object):
 		"""
 		rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
 		return rot.GetRPY()[2]
-
-
-
 
 
 
@@ -223,11 +196,11 @@ class SingleGoalNav(object):
 
 
 		print(">>> Starting drive actuator to drive foward!")
-		nc.throttle_pub.publish(nc.throttle_drive_slow)  # sets to 100
+		self.throttle_pub.publish(self.throttle_drive_slow)  # sets to 100
 
 		rospy.sleep(2)
 
-		nc.actuator_pub.publish(nc.actuator_drive_slow)  # sets to 20
+		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
 
 
 		###################################################################
@@ -237,25 +210,30 @@ class SingleGoalNav(object):
 		while not rospy.is_shutdown():
 
 			# rospy.sleep(1/self.rate)  # sleep for 100ms
-			rospy.sleep(0.5)
+			rospy.sleep(0.2)
 
 
 			_curr_utm = self.current_pos  # gets current utm
 			
 			# using goal a look ahead away for calculating turn angle
 
-			_target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
-			_turn_goal = self.path_array[_target_index]
+			# _target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
+			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
 
+			if not self.target_index:
+				print("Assuming end of course is reached! Stopping rover.")
+				self.shutdown()
+
+			self.current_goal = self.path_array[self.target_index]
 			_curr_angle = self.current_angle  # gets current angle in radians
 
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
-			B = (_turn_goal[0], _turn_goal[1], 0)  # note: B angle not used..
+			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
 
 			# note: flipped sign of turn from imu
 			turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)
 
-			print("Turn angle: {}".format(turn_angle))
+			# print("Turn angle: {}".format(turn_angle))
 
 			if abs(turn_angle) > abs(self.angle_tolerance):
 
@@ -265,8 +243,9 @@ class SingleGoalNav(object):
 				elif turn_angle > self.angle_trim:
 					turn_angle = self.angle_trim
 
-				print("Telling Jackal to turn {} degreess..".format(turn_angle))
-				nc.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+				print("Telling Rover to turn {} degreess..".format(turn_angle))
+				# self.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+				self.translate_angle_with_imu(turn_angle)
 				print("Finished turn.")
 
 
@@ -282,20 +261,69 @@ class SingleGoalNav(object):
 		points (x and y) and builds a list of the diff b/w robot's position and
 		each x and y in the course. Finally, 
 		"""
+
+		# note: numpy seems to return blank array if out of index, so
+		# it should return None at end of course.
+
 		dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
 		dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
 
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
-		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
+		# print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
 
 		ind = 0
 		for pos_diff in d:
-			# print("Distance between Jackal and goal: index={}, value=({}, {}), distance={} meters".format(ind, cx[ind], cy[ind], d[ind]))
-			print("Distance between Jackal and goal: index={}, value=({}, {}), distance={} meters".format(ind, cx[ind], cy[ind], pos_diff))
 			if pos_diff > self.look_ahead:
 				return d.index(pos_diff)  # return index of goal to go to
 			ind += 1
+
+		return None
+
+
+
+	def translate_angle_with_imu(self, goal_angle):
+		"""
+		Uses IMU to translate a number of degrees (goal_angle), but stops
+		if it exceeds the turning boundaries of the red rover, which uses
+		the pivot data to determine.
+		"""
+		_turn_val = self.no_turn_val  # initializes turn to not turn
+
+		print("Angle to translate: {}".format(goal_angle))
+
+		if goal_angle > 0:
+			print("Turning right..")
+			_turn_val = self.turn_right_val  # value to turn right
+		elif goal_angle < 0:
+			print("Turning left..")
+			_turn_val = self.turn_left_val  # value to turn left
+
+		turn_angle = 0
+		# last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
+		last_angle = self.current_angle
+
+		# while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
+		while abs(turn_angle) < abs(radians(goal_angle)) and not self.at_flag and not rospy.is_shutdown():
+
+			# print("Current angle: {}, Current pivot: {}".format(self.last_angle, self.current_pivot))
+
+			self.articulator_pub.publish(_turn_val)
+
+			rospy.sleep(1.0/self.rate)
+
+			# curr_angle = self.get_jackal_rot().jackal_rot
+			curr_angle = self.current_angle
+			delta_angle = self.normalize_angle(curr_angle - last_angle)
+			turn_angle += delta_angle
+			last_angle = curr_angle
+
+			if delta_angle == 0.0:
+				break
+
+		self.articulator_pub.publish(self.no_turn_val)  # stop turning once goal angle is reached.
+
+		return
 
 
 
@@ -309,8 +337,14 @@ class SingleGoalNav(object):
 		"""
 		Always stop the robot when shutting down the node
 		"""
-		nc.shutdown_all()
+		print("Shutting down rover: stopping drive, lowering throttle rpms..")
+		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
+		self.throttle_pub.publish(self.throttle_home)
+		rospy.sleep(1)
+		self.articulator_pub.publish(self.no_turn_val)
+		rospy.sleep(1)
+		print("Red rover stopped.")
 
 
 

@@ -42,6 +42,9 @@ class NavController(object):
 
 		# Establishing ROS Service connections:
 		#############################################################################
+		
+		# TEMPORARILY REMOVED FOR TESTING red_rover_drive_2.py!!!
+
 		# print("Waiting for start_sample_collection service..")
 		# rospy.wait_for_service('start_sample_collection')
 		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
@@ -254,7 +257,7 @@ class NavController(object):
 		last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
 
 		# while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
-		while abs(turn_angle) < abs(radians(goal_angle)) and not rospy.is_shutdown():
+		while abs(turn_angle) < abs(radians(goal_angle)) and not self.at_flag and not rospy.is_shutdown():
 
 			# self.cmd_vel.publish(move_cmd)
 
@@ -270,7 +273,7 @@ class NavController(object):
 			last_angle = curr_angle
 
 			if delta_angle == 0.0:
-				print("Delta angle is 0, breaking out of turning loop..")
+				# print("Delta angle is 0, breaking out of turning loop..")
 				break
 
 		self.articulator_pub.publish(self.no_turn_val)  # stop turning once goal angle is reached.

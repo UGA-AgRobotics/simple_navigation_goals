@@ -68,6 +68,8 @@ class FlagHandler:
 		print("Received message from /sample_points topic. Loading received flags..")
 		flags_obj = json.loads(msg.data)
 
+		print("Raw data: {}".format(msg.data))
+
 		print("Flags object: {}".format(flags_obj))
 
 

@@ -5,7 +5,8 @@ import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool, Float64, UInt8
 from sensor_msgs.msg import NavSatFix
-from simple_navigation_goals.srv import *
+from mico_leaf_msgs.srv import start_sample
+import sys
 import math
 import json
 import utm
@@ -49,6 +50,28 @@ class SingleGoalNav(object):
 		self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
 		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 
+
+
+		print("Waiting for /mico_leaf1/sample_service..")
+		rospy.wait_for_service('/mico_leaf1/sample_service')
+		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
+		self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
+		print("start_sample_collection service ready.")
+
+
+		try:
+			test_val = self.start_sample_collection(2)
+			print("val returned: {}".format(test_val.end_sample))
+		except rospy.ServiceException as e:
+			print("an exception happend.")
+			print("exception: {}".format(e))
+
+
+		return
+
+
+
+
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
 
@@ -61,12 +84,12 @@ class SingleGoalNav(object):
 		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
 
-		print("setting path json..")
+		# print("setting path json..")
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
 
-		print("path json set: {}".format(self.path_json))
+		# print("path json set: {}".format(self.path_json))
 
 
 		self.path_array = None  # path converted to list of [easting, northing]

@@ -8,6 +8,7 @@ from sensor_msgs.msg import NavSatFix
 from simple_navigation_goals.srv import *
 import math
 import json
+import utm
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import numpy as np

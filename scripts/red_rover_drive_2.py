@@ -3,7 +3,7 @@
 import roslib
 import rospy
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Bool, Float64, UInt8, Int64s
+from std_msgs.msg import Bool, Float64, UInt8, Int64
 from sensor_msgs.msg import NavSatFix
 from mico_leaf_msgs.srv import start_sample
 import sys
@@ -58,8 +58,6 @@ class SingleGoalNav(object):
 		# # self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
 		# self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
 		# print("start_sample_collection service ready.")
-
-
 
 
 
@@ -155,12 +153,11 @@ class SingleGoalNav(object):
 				return
 
 
-
+			# SERVICE CALL TEST:
+			#########################################
 			self.call_micoleaf_service()
-
-
-
 			return  # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!
+			#########################################
 
 
 			# Gets track to follow:
@@ -224,12 +221,18 @@ class SingleGoalNav(object):
 		print("Calling arm service to collect samples.")
 
 		try:
-			print("Current flag index: {}".format(self.flag_index))
-			if not self.flag_index:
+			_bin_index = self.flag_index + 1  # note: starts it at 1 instead of 0
+
+			print("Current flag index: {}".format(_bin_index))
+
+			if not _bin_index:
 				print(">>> No flag index! Setting it to 1!")
-				self.flag_index = 1
-			test_val = self.start_sample_collection(self.flag_index)
+				_bin_index = 1
+
+			test_val = self.start_sample_collection(_bin_index)
+
 			print("val returned: {}".format(test_val.end_sample))
+
 		except rospy.ServiceException as e:
 			print("an exception happend.")
 			print("exception: {}".format(e))

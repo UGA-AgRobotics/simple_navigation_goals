@@ -83,7 +83,7 @@ class SingleGoalNav(object):
 		# self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
 		self.look_ahead = 2.0  # meters
 
-		self.angle_trim = 1.5  # max angle inc per iteration (in degrees)
+		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
@@ -405,8 +405,9 @@ class SingleGoalNav(object):
 
 			# Call sample collector service here..
 			########################################################################
-			print("Pausing 10s to simulate a sample collection routine..")
-			rospy.sleep(10)
+			# print("Pausing 10s to simulate a sample collection routine..")
+			# rospy.sleep(10)
+			self.call_micoleaf_service()
 			########################################################################
 
 

@@ -3,7 +3,7 @@
 import roslib
 import rospy
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Bool, Float64, UInt8
+from std_msgs.msg import Bool, Float64, UInt8, Int64s
 from sensor_msgs.msg import NavSatFix
 from mico_leaf_msgs.srv import start_sample
 import sys
@@ -44,6 +44,7 @@ class SingleGoalNav(object):
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
+		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
 
 		# Publishers:
 		self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
@@ -51,22 +52,13 @@ class SingleGoalNav(object):
 		self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 
 
+		# Mico Leaf Service:
+		# print("Waiting for /mico_leaf1/sample_service..")
+		# rospy.wait_for_service('/mico_leaf1/sample_service')
+		# # self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
+		# self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
+		# print("start_sample_collection service ready.")
 
-		print("Waiting for /mico_leaf1/sample_service..")
-		rospy.wait_for_service('/mico_leaf1/sample_service')
-		# self.start_sample_collection = rospy.ServiceProxy('start_sample_collection', SampleCollection)
-		self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
-		print("start_sample_collection service ready.")
-
-
-		# try:
-		# 	test_val = self.start_sample_collection(2)
-		# 	print("val returned: {}".format(test_val.end_sample))
-		# except rospy.ServiceException as e:
-		# 	print("an exception happend.")
-		# 	print("exception: {}".format(e))
-
-		# return
 
 
 
@@ -83,19 +75,15 @@ class SingleGoalNav(object):
 		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
 
-		# print("setting path json..")
-
 		self.path_json = path_json  # The path/course the red rover will follow!
-
-
-		# print("path json set: {}".format(self.path_json))
 
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
-		self.look_ahead = 1.5  # meters
+		# self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
+		self.look_ahead = 2.0  # meters
 
-		self.angle_trim = 3.0  # max angle inc per iteration (in degrees)
+		self.angle_trim = 1.5  # max angle inc per iteration (in degrees)
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
@@ -123,6 +111,20 @@ class SingleGoalNav(object):
 		self.np_course = None  # lazy np array version of course for certain manipulations
 
 		self.at_flag = False  # todo: subscribe to at_flag topic?
+		self.flag_index = None
+
+		print("Red rover driver ready.")
+
+
+
+	def flag_index_callback(self, msg):
+		"""
+		Keeps track of flag index from the flag node.
+		Sends this integer to the sample collector.
+		"""
+		print("Setting flag index to {}".format(msg.data))
+		self.flag_index = msg.data
+
 
 
 
@@ -153,12 +155,12 @@ class SingleGoalNav(object):
 				return
 
 
-			try:
-				test_val = self.start_sample_collection(2)
-				print("val returned: {}".format(test_val.end_sample))
-			except rospy.ServiceException as e:
-				print("an exception happend.")
-				print("exception: {}".format(e))
+
+			self.call_micoleaf_service()
+
+
+
+			return  # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!
 
 
 			# Gets track to follow:
@@ -209,6 +211,35 @@ class SingleGoalNav(object):
 
 
 
+	def call_micoleaf_service(self):
+
+		# Mico Leaf Service:
+		print("Waiting for /mico_leaf1/sample_service..")
+		rospy.wait_for_service('/mico_leaf1/sample_service')
+		self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
+		print("start_sample_collection service ready.")
+
+		rospy.sleep(2)
+
+		print("Calling arm service to collect samples.")
+
+		try:
+			print("Current flag index: {}".format(self.flag_index))
+			if not self.flag_index:
+				print(">>> No flag index! Setting it to 1!")
+				self.flag_index = 1
+			test_val = self.start_sample_collection(self.flag_index)
+			print("val returned: {}".format(test_val.end_sample))
+		except rospy.ServiceException as e:
+			print("an exception happend.")
+			print("exception: {}".format(e))
+
+		print("Samples completed!")
+
+		return
+
+
+
 	def quat_to_angle(self, quat):
 		"""
 		Converts quaternion to angle.
@@ -232,6 +263,15 @@ class SingleGoalNav(object):
 		while not self.current_pos:
 			rospy.sleep(1)
 			print("Waiting for GPS data from /fix topic..")
+
+
+
+
+		##### Post-flag fudge factor, if needed: ######
+		# print("Increasing look-ahead to 2x for initial few seconds of starting drive")
+		# self.look_ahead = 2.0 * look_ahead
+
+
 
 
 		self.np_course = np.array(path_array)  # sets numpy array of course
@@ -274,15 +314,11 @@ class SingleGoalNav(object):
 
 
 
-		# return
-
-
-
-
 		###################################################################
 		# This loop calculates a turn angle a look-ahead distance away,
 		# then begins to execute the turn.
 		###################################################################
+		inc_counter = 0
 		while not rospy.is_shutdown() and not self.at_flag:
 
 			if self.at_flag:
@@ -292,8 +328,15 @@ class SingleGoalNav(object):
 				break
 
 
-			# rospy.sleep(1/self.rate)  # sleep for 100ms
 			rospy.sleep(0.2)
+
+
+			##### Post-flag fudge factor, if needed (note: double before loop if using this): #####
+			# if inc_counter % 25 == 0:
+			# 	# hits every 5s with the 0.2s sleep in loop..
+			# 	# shift look-ahead back to the original here??
+			# 	self.look_ahead = 0.5 * self.look_ahead
+
 
 
 			_curr_utm = self.current_pos  # gets current utm
@@ -342,6 +385,8 @@ class SingleGoalNav(object):
 				self.translate_angle_with_imu(turn_angle)
 				print("Finished turn.")
 
+			inc_counter += 1
+
 
 		if self.at_flag:
 			# broke out of drive loop because it's at the flag.
@@ -350,10 +395,23 @@ class SingleGoalNav(object):
 			rospy.sleep(0.1)
 			self.actuator_pub.publish(self.actuator_stop)
 
-			# call sample collector service here..
+			# updates target index before sample collection:
+			_curr_utm = self.current_pos
+			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+			print("Pausing 5s, then calling mico leaf service..")
+			rospy.sleep(5)
+
+
+			# Call sample collector service here..
+			########################################################################
 			print("Pausing 10s to simulate a sample collection routine..")
 			rospy.sleep(10)
+			########################################################################
 
+
+
+			# updates target index again in case the stopping took a bit:
 			_curr_utm = self.current_pos
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 

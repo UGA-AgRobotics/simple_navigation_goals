@@ -42,7 +42,7 @@ class FlagHandler:
 		self.start_drive_publisher = rospy.Publisher('/start_driving', Bool, queue_size=1)
 		self.flag_index_publisher = rospy.Publisher('/flag_index', Int64, queue_size=1)
 
-		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
+		self.flag_tolerance = 12  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 

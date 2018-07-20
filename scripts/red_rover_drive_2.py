@@ -94,6 +94,7 @@ class SingleGoalNav(object):
 		self.actuator_home = 0
 		self.actuator_stop = 0
 		self.actuator_drive_slow = 20  # NOTE: TEST THIS TO MAKE SURE IT'S "SLOW"
+		# self.actuator_drive_med = 50
 
 		# Throttle settings (updated 07/05/18):
 		self.throttle_home = 120  # idle state
@@ -101,7 +102,9 @@ class SingleGoalNav(object):
 		self.throttle_max = 60  # full throttle!
 		self.throttle_drive_slow = 100  # throttle setting for slow driving??
 
-		self.target_index = None  # index in course that's the goal position
+		self.target_index = 0  # index in course that's the goal position
+		self.index_fudge = 10		
+		
 		self.current_goal = None  # [easting, northing] array
 		self.current_pos = None  # [easting, northing] array
 		self.current_angle = None  # angle from imu in radians
@@ -153,11 +156,16 @@ class SingleGoalNav(object):
 				return
 
 
-			# SERVICE CALL TEST:
-			#########################################
-			self.call_micoleaf_service()
-			return  # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!
-			#########################################
+			# print("Running basic drive test!!")
+			# self.run_basic_drive()
+			# print("Basic drive test complete.")
+
+
+			# # SERVICE CALL TEST:
+			# #########################################
+			# self.call_micoleaf_service()
+			# return  # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!
+			# #########################################
 
 
 			# Gets track to follow:
@@ -173,7 +181,9 @@ class SingleGoalNav(object):
 			self.throttle_pub.publish(self.throttle_home)
 			self.actuator_pub.publish(self.actuator_home)
 
-			self.start_path_following(path_array)
+			self.target_index = 0
+
+			self.start_path_following(path_array, self.target_index)
 
 
 
@@ -208,7 +218,64 @@ class SingleGoalNav(object):
 
 
 
-	def call_micoleaf_service(self):
+	def run_basic_drive(self):
+		"""
+		Run a simple test for the big rover's linear actuation.
+		"""
+		print("Running actuator test for big rover..")
+
+		rospy.sleep(1)
+
+		print("Reving throttle up!")
+
+		self.throttle_pub.publish(90)
+
+		print("Pausing 5s before publishing to actuator..")
+		rospy.sleep(5)
+
+
+
+
+		print("Initiating drive.")
+		# self.actuator_pub.publish(self.actuator_drive_slow)  # +1 from actuator home
+		self.actuator_pub.publish(self.actuator_max)
+
+
+		rospy.sleep(3)  # sleep for 1s
+
+
+		print("Stopping rover by setting drive actuator to home state..")
+		self.actuator_pub.publish(self.actuator_stop)  # set hydrolyic actuator to home state (aka stop)??
+		print("Rover stopped, hopefully.")
+
+
+		rospy.sleep(2)
+		print("Calling mico leaf service to collect samples..")
+		self.call_micoleaf_service(1)
+
+		
+
+		# self.actuator_pub.publish(self.)
+
+
+
+		# print("Driving a bit in 2 seconds!")
+		# rospy.sleep(2)
+		# self.actuator_pub.publish(self.actuator_drive_slow)
+		# rospy.sleep(2)
+
+
+
+
+		self.throttle_pub.publish(120)
+
+
+
+		return
+
+
+
+	def call_micoleaf_service(self, flag_ind):
 
 		# Mico Leaf Service:
 		print("Waiting for /mico_leaf1/sample_service..")
@@ -221,15 +288,19 @@ class SingleGoalNav(object):
 		print("Calling arm service to collect samples.")
 
 		try:
-			_bin_index = self.flag_index + 1  # note: starts it at 1 instead of 0
+			# TESTING MICO LEAF SOFTWARE CONN:
+			# _bin_index = 1
 
-			print("Current flag index: {}".format(_bin_index))
+			# _bin_index = None
+			# if not self.flag_index:
+			# 	_bin_index = 1
+			# _bin_index = self.flag_index + 1  # note: starts it at 1 instead of 0
+			# print("Current flag index: {}".format(_bin_index))
+			# if not _bin_index:
+			# 	print(">>> No flag index! Setting it to 1!")
+			# 	_bin_index = 1
 
-			if not _bin_index:
-				print(">>> No flag index! Setting it to 1!")
-				_bin_index = 1
-
-			test_val = self.start_sample_collection(_bin_index)
+			test_val = self.start_sample_collection(flag_ind)
 
 			print("val returned: {}".format(test_val.end_sample))
 
@@ -252,7 +323,7 @@ class SingleGoalNav(object):
 
 
 
-	def start_path_following(self, path_array):
+	def start_path_following(self, path_array, init_target):
 
 		if not isinstance(path_array, list):
 			self.shutdown()
@@ -266,6 +337,8 @@ class SingleGoalNav(object):
 		while not self.current_pos:
 			rospy.sleep(1)
 			print("Waiting for GPS data from /fix topic..")
+
+		print("INITIAL TARGET: {}".format(init_target))
 
 
 
@@ -284,8 +357,9 @@ class SingleGoalNav(object):
 
 
 		_curr_utm = self.current_pos
-		self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
-		self.current_goal = self.path_array[self.target_index]  # sets current goal
+		self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+		# self.current_goal = self.path_array[self.target_index]  # sets current goal
+		self.current_goal = path_array[self.target_index]  # sets current goal
 
 
 		print("Initial target index: {}".format(self.target_index))
@@ -364,7 +438,7 @@ class SingleGoalNav(object):
 				print("Assuming end of course is reached! Stopping rover.")
 				self.shutdown()
 
-			self.current_goal = self.path_array[self.target_index]
+			self.current_goal = self.np_course.tolist()[self.target_index]
 			_curr_angle = self.current_angle  # gets current angle in radians
 
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
@@ -373,7 +447,7 @@ class SingleGoalNav(object):
 			# note: flipped sign of turn from imu
 			turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)
 
-			# print("Turn angle: {}".format(turn_angle))
+			print("Initial turn angle: {}".format(turn_angle))
 
 			if abs(turn_angle) > abs(self.angle_tolerance):
 
@@ -410,7 +484,16 @@ class SingleGoalNav(object):
 			########################################################################
 			# print("Pausing 10s to simulate a sample collection routine..")
 			# rospy.sleep(10)
+			rospy.sleep(1)
+			self.throttle_pub.publish(self.throttle_max)
+			rospy.sleep(1)
+
+			print("Calling mico_leaf1 service.")
 			self.call_micoleaf_service()
+			print("mico_leaf1 service complete.")
+
+			rospy.sleep(1)
+			self.throttle_pub.publish(self.throttle_drive_slow)
 			########################################################################
 
 
@@ -419,20 +502,31 @@ class SingleGoalNav(object):
 			_curr_utm = self.current_pos
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
-			print("New target index: {}".format(self.target_index))
+			# print("New target index: {}".format(self.target_index))
 
 			rospy.sleep(1)
 
-			updated_path = self.path_array[self.target_index:]  # set remaining path to follow
+			updated_path =self.np_course.tolist()[self.target_index:]  # set remaining path to follow
 
 			rospy.sleep(1)
 
 			self.at_flag = False  # set at_flag to False after sample is collected..
 
 			# start following path again:
+
+			self.np_course = np.array(updated_path)
+
+			_curr_utm = self.current_pos
+			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+
+			print("New target index: {}".format(self.target_index))
+			self.target_index += self.index_fudge
+			print("Adding fudge factor to new target index: {}".format(self.target_index))
+
 			print("Starting path following again..")
 			rospy.sleep(1)
-			self.start_path_following(updated_path)
+			self.start_path_following(updated_path, self.target_index)
 
 
 
@@ -457,33 +551,59 @@ class SingleGoalNav(object):
 		# note: numpy seems to return blank array if out of index, so
 		# it should return None at end of course.
 
-		dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
-		dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
+		cx, cy = cx[current_goal_index:], cy[current_goal_index:]
+		dx = [current_position[0] - icx for icx in cx]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
+		dy = [current_position[1] - icy for icy in cy]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
+
+		# dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
+		# dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
+
 
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
+
+		# start at min d, not all of the course distances?
+
+
+
 		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
 
-		# print("distances: {}".format(d))
+		
 
-		ind = 0
-		for pos_diff in d:
-			if pos_diff > self.look_ahead:
-
-				# below gets the index in this segment of course, but the
-				# index relative to the whole course needs to be returned..
-				# return d.index(pos_diff)  # return index of goal to go to
-
-				_index = d.index(pos_diff)
-				goal_index = current_goal_index + _index  # return index of goal in the whole course
-
-				return goal_index
+		ind = d.index(min(d))
 
 
 
+		# What if this was arbitrarily increased to ensure it's not looking behind???
+		# print("Adding arbitary fudge to index..")
+		# ind += self.index_fudge
+
+
+
+
+		L = 0.0
+		while self.look_ahead > L and (ind + 1) < len(cx):
+			dx = cx[ind + 1] - cx[ind]
+			dy = cy[ind + 1] - cy[ind]
+			L += math.sqrt(dx ** 2 + dy ** 2)
+			# print("Distance b/w points: {}".format(L))
 			ind += 1
 
-		return None
+		if not ind:
+			return None
+
+		else:
+			return ind
+
+
+		# ind = 0
+		# for pos_diff in d:
+		# 	if pos_diff > self.look_ahead:
+		# 		_index = d.index(pos_diff)
+		# 		goal_index = current_goal_index + _index  # return index of goal in the whole course
+		# 		return goal_index
+		# 	ind += 1
+		# return None
 
 
 
@@ -556,8 +676,8 @@ class SingleGoalNav(object):
 		rospy.sleep(1)
 		self.throttle_pub.publish(self.throttle_home)
 		rospy.sleep(1)
-		self.articulator_pub.publish(self.no_turn_val)
-		rospy.sleep(1)
+		# self.articulator_pub.publish(self.no_turn_val)
+		# rospy.sleep(1)
 		print("Red rover stopped.")
 
 

@@ -103,7 +103,8 @@ class SingleGoalNav(object):
 		self.throttle_drive_slow = 100  # throttle setting for slow driving??
 
 		self.target_index = 0  # index in course that's the goal position
-		self.index_fudge = 10		
+		self.index_fudge = 10
+		self.last_target_index = None
 		
 		self.current_goal = None  # [easting, northing] array
 		self.current_pos = None  # [easting, northing] array
@@ -156,18 +157,6 @@ class SingleGoalNav(object):
 				return
 
 
-			# print("Running basic drive test!!")
-			# self.run_basic_drive()
-			# print("Basic drive test complete.")
-
-
-			# # SERVICE CALL TEST:
-			# #########################################
-			# self.call_micoleaf_service()
-			# return  # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!
-			# #########################################
-
-
 			# Gets track to follow:
 			nt = NavTracks()
 			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
@@ -197,13 +186,7 @@ class SingleGoalNav(object):
 
 		NOTE: Does the target index need to increment here and/or turn loop?
 
-		"""
-		# print("Rover position callback: {}".format(msg))
-
-		# if not self.current_goal:
-		# 	return  # wait until a goal is set
-
-		
+		"""		
 		_lat, _lon = msg.latitude, msg.longitude
 		curr_pose_utm = utm.from_latlon(_lat, _lon)
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
@@ -223,53 +206,28 @@ class SingleGoalNav(object):
 		Run a simple test for the big rover's linear actuation.
 		"""
 		print("Running actuator test for big rover..")
-
 		rospy.sleep(1)
 
 		print("Reving throttle up!")
-
 		self.throttle_pub.publish(90)
 
 		print("Pausing 5s before publishing to actuator..")
 		rospy.sleep(5)
 
-
-
-
 		print("Initiating drive.")
 		# self.actuator_pub.publish(self.actuator_drive_slow)  # +1 from actuator home
 		self.actuator_pub.publish(self.actuator_max)
-
-
-		rospy.sleep(3)  # sleep for 1s
-
+		rospy.sleep(3)  # driving for as long as delay last
 
 		print("Stopping rover by setting drive actuator to home state..")
 		self.actuator_pub.publish(self.actuator_stop)  # set hydrolyic actuator to home state (aka stop)??
 		print("Rover stopped, hopefully.")
 
-
 		rospy.sleep(2)
 		print("Calling mico leaf service to collect samples..")
 		self.call_micoleaf_service(1)
 
-		
-
-		# self.actuator_pub.publish(self.)
-
-
-
-		# print("Driving a bit in 2 seconds!")
-		# rospy.sleep(2)
-		# self.actuator_pub.publish(self.actuator_drive_slow)
-		# rospy.sleep(2)
-
-
-
-
-		self.throttle_pub.publish(120)
-
-
+		self.throttle_pub.publish(self.throttle_min)  # throttle back down
 
 		return
 
@@ -288,22 +246,8 @@ class SingleGoalNav(object):
 		print("Calling arm service to collect samples.")
 
 		try:
-			# TESTING MICO LEAF SOFTWARE CONN:
-			# _bin_index = 1
-
-			# _bin_index = None
-			# if not self.flag_index:
-			# 	_bin_index = 1
-			# _bin_index = self.flag_index + 1  # note: starts it at 1 instead of 0
-			# print("Current flag index: {}".format(_bin_index))
-			# if not _bin_index:
-			# 	print(">>> No flag index! Setting it to 1!")
-			# 	_bin_index = 1
-
 			test_val = self.start_sample_collection(flag_ind)
-
 			print("val returned: {}".format(test_val.end_sample))
-
 		except rospy.ServiceException as e:
 			print("an exception happend.")
 			print("exception: {}".format(e))
@@ -340,21 +284,9 @@ class SingleGoalNav(object):
 
 		print("INITIAL TARGET: {}".format(init_target))
 
-
-
-
-		##### Post-flag fudge factor, if needed: ######
-		# print("Increasing look-ahead to 2x for initial few seconds of starting drive")
-		# self.look_ahead = 2.0 * look_ahead
-
-
-
-
-		self.np_course = np.array(path_array)  # sets numpy array of course
-
+		self.np_course = np.array(path_array)  # sets numpy array of course\
 
 		rospy.sleep(2)  # give messages time to publish
-
 
 		_curr_utm = self.current_pos
 		self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
@@ -395,44 +327,24 @@ class SingleGoalNav(object):
 		# This loop calculates a turn angle a look-ahead distance away,
 		# then begins to execute the turn.
 		###################################################################
-		inc_counter = 0
+		# inc_counter = 0
 		while not rospy.is_shutdown() and not self.at_flag:
 
 			if self.at_flag:
 				print("At a flag in the course! Stopping the rover to take a sample.")
-				rospy.sleep(0.1)
-				self.articulator_pub.publish(self.actuator_stop)
-				break
-
+				# rospy.sleep(0.1)
+				# self.articulator_pub.publish(self.actuator_stop)
+				# break
+				self.execute_flag_routine()
 
 			rospy.sleep(0.2)
 
-
-			##### Post-flag fudge factor, if needed (note: double before loop if using this): #####
-			# if inc_counter % 25 == 0:
-			# 	# hits every 5s with the 0.2s sleep in loop..
-			# 	# shift look-ahead back to the original here??
-			# 	self.look_ahead = 0.5 * self.look_ahead
-
-
-
 			_curr_utm = self.current_pos  # gets current utm
-
-			print("Current UTM in nav loop: {}".format(_curr_utm))
-			
-			# using goal a look ahead away for calculating turn angle
-
-			print("Calculating new target index..")
-
 			# _target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
 			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
-
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
-
-			# print("target index: {}".format(self.target_index))
 			print("target index: {}".format(self.target_index))
-
 
 			if self.target_index == None:
 				print("Assuming end of course is reached! Stopping rover.")
@@ -444,8 +356,7 @@ class SingleGoalNav(object):
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
 			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
 
-			# note: flipped sign of turn from imu
-			turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)
+			turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
 
 			print("Initial turn angle: {}".format(turn_angle))
 
@@ -462,71 +373,71 @@ class SingleGoalNav(object):
 				self.translate_angle_with_imu(turn_angle)
 				print("Finished turn.")
 
-			inc_counter += 1
+			# inc_counter += 1
 
 
-		if self.at_flag:
-			# broke out of drive loop because it's at the flag.
-			# make sure actuator is set to stop.
-			print("Making sure rover is stopped, then making request to take a sample..")
-			rospy.sleep(0.1)
-			self.actuator_pub.publish(self.actuator_stop)
+		# if self.at_flag:
+			# # broke out of drive loop because it's at the flag.
+			# # make sure actuator is set to stop.
+			# print("Making sure rover is stopped, then making request to take a sample..")
+			# rospy.sleep(0.1)
+			# self.actuator_pub.publish(self.actuator_stop)
 
-			# updates target index before sample collection:
-			_curr_utm = self.current_pos
-			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+			# # updates target index before sample collection:
+			# _curr_utm = self.current_pos
+			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
-			print("Pausing 5s, then calling mico leaf service..")
-			rospy.sleep(5)
-
-
-			# Call sample collector service here..
-			########################################################################
-			# print("Pausing 10s to simulate a sample collection routine..")
-			# rospy.sleep(10)
-			rospy.sleep(1)
-			self.throttle_pub.publish(self.throttle_max)
-			rospy.sleep(1)
-
-			print("Calling mico_leaf1 service.")
-			self.call_micoleaf_service()
-			print("mico_leaf1 service complete.")
-
-			rospy.sleep(1)
-			self.throttle_pub.publish(self.throttle_drive_slow)
-			########################################################################
+			# print("Pausing 5s, then calling mico leaf service..")
+			# rospy.sleep(5)
 
 
+			# # Call sample collector service here..
+			# ########################################################################
+			# # print("Pausing 10s to simulate a sample collection routine..")
+			# # rospy.sleep(10)
+			# rospy.sleep(1)
+			# self.throttle_pub.publish(self.throttle_max)
+			# rospy.sleep(1)
 
-			# updates target index again in case the stopping took a bit:
-			_curr_utm = self.current_pos
-			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+			# print("Calling mico_leaf1 service.")
+			# self.call_micoleaf_service()
+			# print("mico_leaf1 service complete.")
+
+			# rospy.sleep(1)
+			# self.throttle_pub.publish(self.throttle_drive_slow)
+			# ########################################################################
+
+
+
+			# # updates target index again in case the stopping took a bit:
+			# _curr_utm = self.current_pos
+			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+			# # print("New target index: {}".format(self.target_index))
+
+			# rospy.sleep(1)
+
+			# updated_path =self.np_course.tolist()[self.target_index:]  # set remaining path to follow
+
+			# rospy.sleep(1)
+
+			# self.at_flag = False  # set at_flag to False after sample is collected..
+
+			# # start following path again:
+
+			# self.np_course = np.array(updated_path)
+
+			# _curr_utm = self.current_pos
+			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
 
 			# print("New target index: {}".format(self.target_index))
+			# self.target_index += self.index_fudge
+			# print("Adding fudge factor to new target index: {}".format(self.target_index))
 
-			rospy.sleep(1)
-
-			updated_path =self.np_course.tolist()[self.target_index:]  # set remaining path to follow
-
-			rospy.sleep(1)
-
-			self.at_flag = False  # set at_flag to False after sample is collected..
-
-			# start following path again:
-
-			self.np_course = np.array(updated_path)
-
-			_curr_utm = self.current_pos
-			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
-
-
-			print("New target index: {}".format(self.target_index))
-			self.target_index += self.index_fudge
-			print("Adding fudge factor to new target index: {}".format(self.target_index))
-
-			print("Starting path following again..")
-			rospy.sleep(1)
-			self.start_path_following(updated_path, self.target_index)
+			# print("Starting path following again..")
+			# rospy.sleep(1)
+			# self.start_path_following(updated_path, self.target_index)
 
 
 
@@ -543,10 +454,7 @@ class SingleGoalNav(object):
 		From red_rover_model pure_puruit module. Loops through course
 		points (x and y) and builds a list of the diff b/w robot's position and
 		each x and y in t{he course. Finally, 
-				"""
-		# print("Inside calc target index function.")
-		# print("Current poisition: {}".format(current_position))
-		# print("Current goal index: {}".format(current_goal_index))
+		"""
 
 		# note: numpy seems to return blank array if out of index, so
 		# it should return None at end of course.
@@ -558,28 +466,11 @@ class SingleGoalNav(object):
 		# dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
 		# dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
 
-
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
-
-		# start at min d, not all of the course distances?
-
-
-
-		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
-
-		
+		print("Determining goal point based on look-ahead of {}".foramt(self.look_ahead))
 
 		ind = d.index(min(d))
-
-
-
-		# What if this was arbitrarily increased to ensure it's not looking behind???
-		# print("Adding arbitary fudge to index..")
-		# ind += self.index_fudge
-
-
-
 
 		L = 0.0
 		while self.look_ahead > L and (ind + 1) < len(cx):
@@ -596,14 +487,54 @@ class SingleGoalNav(object):
 			return ind
 
 
-		# ind = 0
-		# for pos_diff in d:
-		# 	if pos_diff > self.look_ahead:
-		# 		_index = d.index(pos_diff)
-		# 		goal_index = current_goal_index + _index  # return index of goal in the whole course
-		# 		return goal_index
-		# 	ind += 1
-		# return None
+
+	def execute_flag_routine(self):
+		"""
+		Routine to run when the rover is at a flag.
+		"""
+		print("Making sure rover is stopped, then making request to take a sample..")
+		rospy.sleep(0.1)
+		self.actuator_pub.publish(self.actuator_stop)
+
+		# Call sample collector service here..
+		########################################################################
+		# print("Pausing 10s to simulate a sample collection routine..")
+		# rospy.sleep(10)
+
+		print("Pausing 5s, then calling mico leaf service..")
+		rospy.sleep(5)
+		self.throttle_pub.publish(self.throttle_max)
+		rospy.sleep(1)
+
+		print("Calling mico_leaf1 service.")
+		self.call_micoleaf_service()
+		print("mico_leaf1 service complete.")
+
+		rospy.sleep(1)
+		self.throttle_pub.publish(self.throttle_drive_slow)
+		rospy.sleep(1)
+		########################################################################
+
+		_curr_utm = self.current_pos
+		self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+		updated_path =self.np_course.tolist()[self.target_index:]  # set remaining path to follow
+		self.np_course = np.array(updated_path)  # updates np array of course
+
+		self.at_flag = False  # set at_flag to False after sample is collected..
+
+		# _curr_utm = self.current_pos
+		# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+
+		# print("New target index: {}".format(self.target_index))
+		# self.target_index += self.index_fudge
+		# print("Adding fudge factor to new target index: {}".format(self.target_index))
+
+		# print("Starting path following again..")
+		# rospy.sleep(1)
+		# self.start_path_following(updated_path, self.target_index)
+
+		return
 
 
 
@@ -625,19 +556,15 @@ class SingleGoalNav(object):
 			_turn_val = self.turn_left_val  # value to turn left
 
 		turn_angle = 0
-		# last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
 		last_angle = self.current_angle
 
-		# while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
 		while abs(turn_angle) < abs(radians(goal_angle)) and not self.at_flag and not rospy.is_shutdown():
 
-			# print("Current angle: {}, Current pivot: {}".format(self.last_angle, self.current_pivot))
 
 			self.articulator_pub.publish(_turn_val)
 
 			rospy.sleep(1.0/self.rate)
 
-			# curr_angle = self.get_jackal_rot().jackal_rot
 			curr_angle = self.current_angle
 			delta_angle = self.normalize_angle(curr_angle - last_angle)
 			turn_angle += delta_angle
@@ -674,10 +601,10 @@ class SingleGoalNav(object):
 		print("Shutting down rover: stopping drive, lowering throttle rpms..")
 		self.actuator_pub.publish(self.actuator_stop)
 		rospy.sleep(1)
+		self.articulator_pub.publish(self.no_turn_val)
+		rospy.sleep(1)
 		self.throttle_pub.publish(self.throttle_home)
 		rospy.sleep(1)
-		# self.articulator_pub.publish(self.no_turn_val)
-		# rospy.sleep(1)
 		print("Red rover stopped.")
 
 

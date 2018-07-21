@@ -37,7 +37,10 @@ class SingleGoalNav(object):
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
-		rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
+		# rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
+
+		rospy.Subscriber('/navsat/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
+		
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
 

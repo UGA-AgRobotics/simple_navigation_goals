@@ -17,7 +17,7 @@ import math
 import rospy
 import utm
 import json
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Int64
 from sensor_msgs.msg import NavSatFix
 import flag_file_handler  # local requirement
 import nav_tracks  # local requirement
@@ -40,8 +40,9 @@ class FlagHandler:
 		# Publishers:
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
 		self.start_drive_publisher = rospy.Publisher('/start_driving', Bool, queue_size=1)
+		self.flag_index_publisher = rospy.Publisher('/flag_index', Int64, queue_size=1)
 
-		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
+		self.flag_tolerance = 12  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 
@@ -68,6 +69,8 @@ class FlagHandler:
 		print("Received message from /sample_points topic. Loading received flags..")
 		flags_obj = json.loads(msg.data)
 
+		print("Raw data: {}".format(msg.data))
+
 		print("Flags object: {}".format(flags_obj))
 
 
@@ -75,13 +78,13 @@ class FlagHandler:
 		nt = nav_tracks.NavTracks()
 		
 		# For geojson flags:
-		# flags_array = nt.get_flags_from_geojson(flags_obj)
+		flags_array = nt.get_flags_from_geojson(flags_obj)
 
-		# For json flags:
-		fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
-		fh.flags = flags_obj
-		fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
-		flags_array = nt.get_track_from_course(fh.flags)  # for json flags
+		# # For json flags:
+		# fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
+		# fh.flags = flags_obj
+		# fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
+		# flags_array = nt.get_track_from_course(fh.flags)  # for json flags
 
 
 		print("Flags: {}".format(flags_array))
@@ -89,6 +92,29 @@ class FlagHandler:
 
 		print("Publishing to Red Rover's drive node to initiate driving..")
 		self.start_drive_publisher.publish(True)
+
+		return
+
+
+
+	def position_callback(self, current_fix):
+		"""
+		Position callback, which is executed in the event that a GPS fix is
+		published by the Jackal.
+		"""
+		if not self.flags:
+			return
+
+
+		# print "jackal_pos_server: jackal's position: {}".format(current_fix)
+		current_utm = self.get_utm_from_fix(current_fix)  # converts current fix to utm
+
+		if not self.flag_run_complete and self.flag_index < len(self.flags):
+			self.compare_position_to_flags(current_utm)
+
+			# update flag topic for the drive node (flag index + 1)
+			self.flag_index_publisher.publish(self.flag_index + 1)
+
 
 		return
 		
@@ -127,7 +153,6 @@ class FlagHandler:
 			if self.flag_index >= len(self.flags) - 1:
 				print(">>> Finished driving to flags list.")
 				print(">>> Continuing the rest of the row.")
-				# self.flag_publisher.publish(False)
 				self.flag_run_complete = True
 				rospy.sleep(0.5)
 				self.flag_publisher.publish(False)
@@ -138,25 +163,6 @@ class FlagHandler:
 		else:
 			self.flag_publisher.publish(False)
 		
-		return
-
-
-
-	def position_callback(self, current_fix):
-		"""
-		Position callback, which is executed in the event that a GPS fix is
-		published by the Jackal.
-		"""
-		if not self.flags:
-			return
-
-
-		# print "jackal_pos_server: jackal's position: {}".format(current_fix)
-		current_utm = self.get_utm_from_fix(current_fix)  # converts current fix to utm
-
-		if not self.flag_run_complete and self.flag_index < len(self.flags):
-			self.compare_position_to_flags(current_utm)
-
 		return
 
 		

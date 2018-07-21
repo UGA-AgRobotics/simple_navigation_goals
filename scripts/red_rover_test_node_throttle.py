@@ -66,16 +66,16 @@ class ThrottleTestNode:
 		throttle_val = msg.data
 
 		print("Setting throttle to {}".format(throttle_val))
-		print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_min))
+		print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_low))
 
-		if throttle_val < self.throttle_max or throttle_val > self.throttle_min:
-			print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_max, self.throttle_min))
+		if throttle_val < self.throttle_high or throttle_val > self.throttle_low:
+			print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_high, self.throttle_low))
 			return
 
 		if not throttle_val:
 			throttle_val = self.throttle_home
 
-		self.throttle_pub.publish(self.throttle_val)
+		self.throttle_pub.publish(throttle_val)
 
 
 
@@ -84,7 +84,7 @@ class ThrottleTestNode:
 	# 	Runs a throttle test routine for the big rover.
 	# 	"""
 	# 	print("Running thottle test for big rover..")
-	# 	print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_min))
+	# 	print("Publishing single value, {}, to /driver/throttle topic".format(self.throttle_low))
 
 	# 	if throttle_val < self.throttle_high or throttle_val > self.throttle_low:
 	# 		print("!!! Must provide a throttle value between {} (full throttle) and {} (low throttle) !!!".format(self.throttle_high, self.throttle_low))

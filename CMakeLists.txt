@@ -67,6 +67,7 @@ add_service_files(
 	JackalRot.srv
 	SampleCollection.srv
 	DriveTest.srv
+	RedRoverRot.srv
 )
 
 ## Generate actions in the 'action' folder

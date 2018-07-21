@@ -54,9 +54,7 @@ class LogfileParser:
 
 
 
-	def convert_emlid_logfile_to_course(self, input_filename, output_filename, date=None, location=None):
-
-		n_skip = 1  # grab every nth point (default: 1)
+	def convert_emlid_logfile_to_course(self, input_filename, output_filename, n_skip=1, date=None, location=None):
 
 		data_json = {}
 		data_json['goals'] = []
@@ -156,21 +154,24 @@ if __name__ == '__main__':
 	parsedfilename = sys.argv[2]  # gets filename to save parsed data
 	date = None
 	location = None
+	n_skip = None
 
 	try:
-		date = sys.argv[3]
-		location = sys.argv[4]
+		n_skip = int(sys.argv[3])
+		date = sys.argv[4]
+		location = sys.argv[5]
 	except IndexError:
+		pass
+	except Exception:
 		raise
-
 
 	lp = LogfileParser()
 
 	# Parses emlid log into file of lat,lons:
-	# lp.convert_emlid_logfile_to_latlons(filename, parsedfilename)
+	lp.convert_emlid_logfile_to_latlons(filename, parsedfilename)
 	
 	# Parses emlid log into course file format:
-	# lp.convert_emlid_logfile_to_course(filename, parsedfilename, date, location)
+	# lp.convert_emlid_logfile_to_course(filename, parsedfilename, n_skip, date, location)
 
 	# Parses emlid log into geojson file format:
-	lp.convert_emlid_logfile_to_geojson(filename, parsedfilename)
+	# lp.convert_emlid_logfile_to_geojson(filename, parsedfilename)

@@ -18,12 +18,7 @@ from geometry_msgs.msg import Quaternion
 
 # Local package requirements:
 from nav_tracks import NavTracks
-from red_rover_nav_controller import NavController
 import orientation_transforms
-
-
-
-# nc = NavController()
 
 
 

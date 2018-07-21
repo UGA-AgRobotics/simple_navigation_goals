@@ -31,13 +31,6 @@
 <!-- Launches IMU launch file -->
 <include file="$(find simple_navigation_goals)/launch/imu.launch" ns="phidget" />
 
-<!-- Launches jackal position service -->
-<!-- <node pkg="simple_navigation_goals" name="jackal_pos_server" type="jackal_pos_server.py" output="screen" /> -->
-
-<!-- Launches jackal rotation service -->
-<!-- <node pkg="simple_navigation_goals" name="red_rover_rot_server" type="red_rover_rot_server.py" output="screen" /> -->
-<!-- <node pkg="simple_navigation_goals" name="jackal_rot_server" type="jackal_rot_server.py" output="screen" /> -->
-
 <!-- Throttle Test Node -->
 <node pkg="simple_navigation_goals" name="red_rover_test_node_throttle" type="red_rover_test_node_throttle.py" output="screen" />
 

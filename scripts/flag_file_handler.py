@@ -194,7 +194,7 @@ class FlagFileHandler(object):
 
 
 
-	def parse_bag_data_to_flags(self):
+	def parse_bag_data_to_flags(self, n_skip=1):
 		"""
 		Takes /fix data from bag file handler (e.g., {"topic": "/fix", "data": [{"lat": "", "lon": ""}]}),
 		and parses it to the flag JSON format.
@@ -208,23 +208,33 @@ class FlagFileHandler(object):
 		else:
 			raise "More than one topic in bag data.. TODO: loop to find desired topic instead of raising exception.."
 
-		_index = 1
-		for _pos in bag_data_list:
+		# _index = 1
+		# for _pos in bag_data_list:
+		# 	parsed_data_obj = {
+		# 		'index': _index,
+		# 		'decPos': {
+		# 			'lat': _pos.get('lat'),
+		# 			'lon': _pos.get('lon')
+		# 		}
+		# 	}
+		# 	parsed_results['flags'].append(parsed_data_obj)
+		# 	_index += 1
+		for i in range(0, len(bag_data_list) - 1, n_skip):
+			_pos = bag_data_list[i]
 			parsed_data_obj = {
-				'index': _index,
+				'index': i,
 				'decPos': {
 					'lat': _pos.get('lat'),
 					'lon': _pos.get('lon')
 				}
 			}
 			parsed_results['flags'].append(parsed_data_obj)
-			_index += 1
 
 		self.flags = parsed_results  # set flags to parsed results
 
 
 
-	def convert_course_to_latlon_csv(self, input_filename, output_filename):
+	def convert_course_to_latlon_csv(self, input_filename, output_filename, n_skip=1):
 		"""
 		Converts a course in JSON format to a CSV of lat,lons.
 		"""
@@ -238,10 +248,17 @@ class FlagFileHandler(object):
 		course_json = json.loads(file_data)  # converts json string to object		
 
 		print("Building CSV file of lat, lons..")
-		for pos_obj in course_json.get('flags', []):
+		# for pos_obj in course_json.get('flags', []):
+		# 	_lat = pos_obj['decPos']['lat']
+		# 	_lon = pos_obj['decPos']['lon']
+		# 	_csv_data.append([_lat, _lon])
+		for i in range(0, len(course_json.get('flags')) - 1, n_skip):
+			pos_obj = course_json['flags'][i]
 			_lat = pos_obj['decPos']['lat']
 			_lon = pos_obj['decPos']['lon']
 			_csv_data.append([_lat, _lon])
+
+
 
 		print("Writing data to CSV: {}".format(output_filename))
 		fileout = open(output_filename, 'wb')
@@ -317,18 +334,18 @@ if __name__ == '__main__':
 	"""
 
 
-	# Writes a course file from CSV file of lat/lons:
-	input_filename = sys.argv[1]
-	output_filename = sys.argv[2]
-	fh = FlagFileHandler()
-	fh.convert_latlon_csv_to_course(input_filename, output_filename)
+	# # Writes a course file from CSV file of lat/lons:
+	# input_filename = sys.argv[1]
+	# output_filename = sys.argv[2]
+	# fh = FlagFileHandler()
+	# fh.convert_latlon_csv_to_course(input_filename, output_filename)
 
-	# BATCH MODE!
-	# for i in range(4, 12):
-	# 	input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
-	# 	output_filename = "../courses/peanut_field_2018/row_{}_course.json".format(i)
-	# 	fh = FlagFileHandler()
-	# 	fh.convert_latlon_csv_to_course(input_filename, output_filename)
+	# # BATCH MODE!
+	# # for i in range(4, 12):
+	# # 	input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
+	# # 	output_filename = "../courses/peanut_field_2018/row_{}_course.json".format(i)
+	# # 	fh = FlagFileHandler()
+	# # 	fh.convert_latlon_csv_to_course(input_filename, output_filename)
 
 	
 
@@ -338,43 +355,50 @@ if __name__ == '__main__':
 
 
 	# TEMPORARILY COMMENTED OUT:
-	# filename = None
-	# from_bag_file = False
+	filename = None
+	from_bag_file = False
+	n_skip = 1
 
-	# try:
-	# 	filename = sys.argv[1]  # get filename from command line
-	# except IndexError as e:
-	# 	raise "Must add an input filename for flags file!"
+	try:
+		filename = sys.argv[1]  # get filename from command line
+	except IndexError as e:
+		raise "Must add an input filename for flags file!"
 
-	# try:
-	# 	from_bag_file = sys.argv[2]
-	# 	if from_bag_file in ["true", "True", True]:
-	# 		from_bag_file = True
-	# except IndexError as e:
-	# 	print "Didn't provide bool for data being from bag file or not, assuming it's not from bag_handler.py.."
+	try:
+		from_bag_file = sys.argv[2]
+		if from_bag_file in ["true", "True", True]:
+			from_bag_file = True
+	except IndexError as e:
+		print "Didn't provide bool for data being from bag file or not, assuming it's not from bag_handler.py.."
 
-	# flag_file_handler = FlagFileHandler()
+	try:
+		n_skip = int(sys.argv[3])
+	except Exception as e:
+		print("No n_skip value provided, assuming 1..")
 
-	# print("flags file read.")
-	# print("Filling out flags file with missing formats..")
 
-	# if from_bag_file:
-	# 	print("Assuming GPS topic is /fix in bag file..")
-	# 	output_filename = "{}_filled.json".format(filename.split('.bag')[0])  # saves as same filename but w/ .json extension..
-	# 	bag_handler.main(filename, output_filename, ["/fix"])  # NOTE: will save output file to path as output_filename..
-	# 	print("Filled out GPS data file created: {}".format(output_filename))
-	# 	flag_file_handler.read_flags_file(output_filename)  # sets updated/filled data file as flags file..
-	# 	flag_file_handler.parse_bag_data_to_flags()  # parses bag_handler data to flags file format before filling out position data..
-	# else:
-	# 	output_filename = "{}_updated.json".format(filename.split('.')[0])
-	# 	flag_file_handler.read_flags_file(filename)
+	flag_file_handler = FlagFileHandler()
 
-	# updated_flags = flag_file_handler.fill_out_flags_file()
-	# flag_file_handler.flags['flags'] = updated_flags
+	print("flags file read.")
+	print("Filling out flags file with missing formats..")
 
-	# print("flags file now updated.")
-	# print("Saving updated flags file as: {}..".format(output_filename))
+	if from_bag_file:
+		print("Assuming GPS topic is /fix in bag file..")
+		output_filename = "{}_filled.json".format(filename.split('.bag')[0])  # saves as same filename but w/ .json extension..
+		bag_handler.main(filename, output_filename, ["/fix"])  # NOTE: will save output file to path as output_filename..
+		print("Filled out GPS data file created: {}".format(output_filename))
+		flag_file_handler.read_flags_file(output_filename)  # sets updated/filled data file as flags file..
+		flag_file_handler.parse_bag_data_to_flags(n_skip)  # parses bag_handler data to flags file format before filling out position data..
+	else:
+		output_filename = "{}_updated.json".format(filename.split('.')[0])
+		flag_file_handler.read_flags_file(filename)
 
-	# flag_file_handler.save_flags_file(output_filename, flag_file_handler.flags)
+	updated_flags = flag_file_handler.fill_out_flags_file()
+	flag_file_handler.flags['flags'] = updated_flags
 
-	# print("Done.")
+	print("flags file now updated.")
+	print("Saving updated flags file as: {}..".format(output_filename))
+
+	flag_file_handler.save_flags_file(output_filename, flag_file_handler.flags)
+
+	print("Done.")

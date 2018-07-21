@@ -77,7 +77,7 @@ class SingleGoalNav(object):
 		self.path_array = None  # path converted to list of [easting, northing]
 
 		# self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
-		self.look_ahead = 2.0  # meters
+		self.look_ahead = 3.0  # meters
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
@@ -196,7 +196,7 @@ class SingleGoalNav(object):
 		Angle from IMU in radians.
 		"""
 		self.current_angle = self.quat_to_angle(msg.orientation)
-		print("Current angle: {}".format(self.current_angle))
+		# print("Current angle: {}".format(self.current_angle))
 
 
 
@@ -450,6 +450,46 @@ class SingleGoalNav(object):
 		
 
 
+	# ORIGINAL CALC_TARGET_INDEX (TEMP COMMENTED OUT FOR TESTING!!)
+	# def calc_target_index(self, current_position, current_goal_index, cx, cy):
+	# 	"""
+	# 	From red_rover_model pure_puruit module. Loops through course
+	# 	points (x and y) and builds a list of the diff b/w robot's position and
+	# 	each x and y in t{he course. Finally, 
+	# 	"""
+
+	# 	# note: numpy seems to return blank array if out of index, so
+	# 	# it should return None at end of course.
+
+	# 	cx, cy = cx[current_goal_index:], cy[current_goal_index:]
+	# 	dx = [current_position[0] - icx for icx in cx]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
+	# 	dy = [current_position[1] - icy for icy in cy]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
+
+	# 	# dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
+	# 	# dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
+
+	# 	d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
+
+	# 	print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
+
+	# 	ind = d.index(min(d))
+
+	# 	L = 0.0
+	# 	while self.look_ahead > L and (ind + 1) < len(cx):
+	# 		dx = cx[ind + 1] - cx[ind]
+	# 		dy = cy[ind + 1] - cy[ind]
+	# 		L += math.sqrt(dx ** 2 + dy ** 2)
+	# 		print("Distance b/w points: {}".format(L))
+	# 		ind += 1
+
+	# 	if not ind:
+	# 		return None
+
+	# 	else:
+	# 		return ind
+
+
+
 	def calc_target_index(self, current_position, current_goal_index, cx, cy):
 		"""
 		From red_rover_model pure_puruit module. Loops through course
@@ -460,32 +500,48 @@ class SingleGoalNav(object):
 		# note: numpy seems to return blank array if out of index, so
 		# it should return None at end of course.
 
-		cx, cy = cx[current_goal_index:], cy[current_goal_index:]
+		# cx, cy = cx[current_goal_index:], cy[current_goal_index:]  # start looking at original target index
 		dx = [current_position[0] - icx for icx in cx]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
 		dy = [current_position[1] - icy for icy in cy]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
 
 		# dx = [current_position[0] - icx for icx in cx[current_goal_index:]]  # diff b/w robot's position and all x values in course (starting at current goal, onward)
 		# dy = [current_position[1] - icy for icy in cy[current_goal_index:]]  # diff b/w robot's position and all y values in course (starting at current goal, onward)
 
-		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
+		d = [math.sqrt(idx ** 2 + idy ** 2) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
 		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
 
-		ind = d.index(min(d))
+		print("{}".format(d))
 
-		L = 0.0
-		while self.look_ahead > L and (ind + 1) < len(cx):
-			dx = cx[ind + 1] - cx[ind]
-			dy = cy[ind + 1] - cy[ind]
-			L += math.sqrt(dx ** 2 + dy ** 2)
-			# print("Distance b/w points: {}".format(L))
+		ind = d.index(min(d))  # index of closest goal to robot
+
+		print("Min index: {}".format(ind))
+
+		# loops list, starting at closest point to robot:
+		for _diff in d[ind:]:
+
+			if _diff > self.look_ahead:
+				return ind				
+
 			ind += 1
 
-		if not ind:
-			return None
+		return None
 
-		else:
-			return ind
+
+		# L = 0.0
+		# while self.look_ahead > L and (ind + 1) < len(cx):
+		# 	dx = cx[ind + 1] - cx[ind]
+		# 	dy = cy[ind + 1] - cy[ind]
+
+		# 	L += math.sqrt(dx ** 2 + dy ** 2)
+		# 	print("Distance b/w points: {}".format(L))
+		# 	ind += 1
+
+		# if not ind:
+		# 	return None
+
+		# else:
+		# 	return ind
 
 
 

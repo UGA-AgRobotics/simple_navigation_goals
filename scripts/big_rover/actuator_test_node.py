@@ -14,12 +14,16 @@ class ActuatorTestNode:
 
 		rospy.init_node('actuator_test_node', anonymous=True)
 
-		self.actuator_min = 138
-		self.actuator_max = 65
-		self.actuator_scale = 90
-		self.actuator_home = 90
+		rospy.on_shutdown(self.shutdown_actuator)
 
-		self.actuator_test_val = 1  # note: arduino firmware code will write 91 to servo
+		self.actuator_min = -25  # accounting for scale factor on arduino (65 - 90) + 1 !!TEST THIS ONE!!
+		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
+		# self.actuator_scale = 90
+		# self.actuator_home = 90
+		self.actuator_home = 0
+		self.actuator_stop = 0
+
+		self.actuator_test_val = 30  # note: arduino firmware code will write actuator_test_val + 90 to servo
 
 		# Services:
 		# s = rospy.Service('test_drive', DriveDistance, self.handle_test_drive)
@@ -30,7 +34,12 @@ class ActuatorTestNode:
 		# Subscribers:
 		rospy.Subscriber("/driver/encoder_velocity", Float64, self.rover_velocity_callback)
 		rospy.Subscriber("/driver/pivot", Float64, self.rover_pivot_callback, queue_size=1)
-		rospy.Subscriber("/driver/run_actuator_test", Bool, self.actuator_test_callback)
+		rospy.Subscriber("/driver/test/execute_drive", Float64, self.execute_drive)
+		rospy.Subscriber("/driver/test/run_actuator_test", Bool, self.actuator_test_callback)
+
+
+		self.actuator_pub.publish(self.actuator_home)
+
 
 		print("actuator_test_node ready.")
 
@@ -44,7 +53,8 @@ class ActuatorTestNode:
 		"""
 		Subscriber callback for big rover's velocity.
 		"""
-		print("Rover velocity callback message: {}".format(msg))
+		# print("Rover velocity callback message: {}".format(msg))
+		pass
 		
 
 
@@ -52,7 +62,8 @@ class ActuatorTestNode:
 		"""
 		Subscriber callback for the big rover's current angle/pivot.
 		"""
-		print("Rover pivot callback message: {}".format(msg))
+		# print("Rover pivot callback message: {}".format(msg))
+		pass
 
 
 
@@ -85,19 +96,41 @@ class ActuatorTestNode:
 		Run a simple test for the big rover's linear actuation.
 		"""
 		print("Running actuator test for big rover..")
-		print("Publishing 1 to /driver/actuator topic (+1 from actuator's home state)..")
 
-		self.actuator_pub.publish(1)  # +1 from actuator home
+		print("Pausing 5s before publishing to actuator..")
+		rospy.sleep(5)
 
-		rospy.sleep(1)  # sleep for 1s
+		print("Publishing..")
+		self.actuator_pub.publish(self.actuator_test_val)  # +1 from actuator home
+
+		rospy.sleep(2)  # sleep for 1s
 
 		print("Stopping rover by setting drive actuator to home state..")
 
-		self.actuator_pub.publish(0)  # set hydrolyic actuator to home state (aka stop)??
+		self.actuator_pub.publish(self.actuator_stop)  # set hydrolyic actuator to home state (aka stop)??
 
 		print("Rover stopped, hopefully.")
 
 		return
+
+
+
+	def execute_drive(self, mgs):
+		actuator_val = mgs.data
+		self.actuator_pub.publish(actuator_val)
+		return
+
+
+
+	def shutdown_actuator(self):
+		"""
+		Set actuator to home state if node is killed/shutdown.
+		"""
+		print("Shutting down red rover actuator..")
+		rospy.sleep(1)
+		self.actuator_pub.publish(self.actuator_stop)
+		rospy.sleep(1)
+		print("Red rover actuator shutdown.")
 
 
 

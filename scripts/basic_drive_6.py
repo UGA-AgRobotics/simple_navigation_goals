@@ -21,7 +21,7 @@ import utm
 import PyKDL
 import numpy as np
 # import matplotlib.pyplot as plt
-import dubins
+# import dubins
 
 # Local package requirements:
 from nav_tracks import NavTracks
@@ -252,17 +252,6 @@ class SingleGoalNav():
 			if pos_diff > self.look_ahead:
 				return d.index(pos_diff)  # return index of goal to go to
 			ind += 1
-
-
-
-	# def get_current_position(self):
-	# 	"""
-	# 	Calls jackal_pos_server and converts the NavSatFix type
-	# 	into UTM format.
-	# 	"""
-	# 	curr_pose = self.get_jackal_pos()
-	# 	curr_pose_utm = utm.from_latlon(curr_pose.jackal_fix.latitude, curr_pose.jackal_fix.longitude)
-	# 	return curr_pose_utm
 
 
 

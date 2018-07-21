@@ -16,6 +16,7 @@ import sys
 import math
 import rospy
 import utm
+import json
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
 import flag_file_handler  # local requirement
@@ -38,7 +39,7 @@ class FlagHandler:
 
 		# Publishers:
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
-		self.start_drive_publisher = rospy.Publisher('/start_driving')
+		self.start_drive_publisher = rospy.Publisher('/start_driving', Bool, queue_size=1)
 
 		self.flag_tolerance = 0.5  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
@@ -67,9 +68,21 @@ class FlagHandler:
 		print("Received message from /sample_points topic. Loading received flags..")
 		flags_obj = json.loads(msg.data)
 
+		print("Flags object: {}".format(flags_obj))
+
+
 		# Convert flags into list of [easting, northing] pairs..
 		nt = nav_tracks.NavTracks()
-		flags_array = nt.get_flags_from_geojson(flags_obj)  # returns list of [easting, northing] pairs
+		
+		# For geojson flags:
+		# flags_array = nt.get_flags_from_geojson(flags_obj)
+
+		# For json flags:
+		fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
+		fh.flags = flags_obj
+		fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
+		flags_array = nt.get_track_from_course(fh.flags)  # for json flags
+
 
 		print("Flags: {}".format(flags_array))
 		self.flags = flags_array
@@ -96,7 +109,7 @@ class FlagHandler:
 		topic to tell robot to stop!
 		"""
 		if not self.flags:
-			continue
+			return
 
 		current_flag = self.flags[self.flag_index]  # grab current flag, format: [easting, northing]
 
@@ -135,7 +148,7 @@ class FlagHandler:
 		published by the Jackal.
 		"""
 		if not self.flags:
-			continue
+			return
 
 
 		# print "jackal_pos_server: jackal's position: {}".format(current_fix)

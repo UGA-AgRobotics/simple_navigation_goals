@@ -7,7 +7,6 @@ from std_msgs.msg import Bool
 from std_msgs.msg import String
 from std_msgs.msg import Float64
 from simple_navigation_goals.srv import *
-import tf
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import utm
@@ -15,12 +14,9 @@ import utm
 
 
 # Global settings:
-tf_listener = tf.TransformListener()
-odom_frame = '/odom'
-base_frame = '/base_link'
-linear_speed = 0.3  # units of m/s
-rate = 20  # Hz
-angular_speed = 0.3
+linear_speed = 0.2  # units of m/s
+rate = 10  # Hz
+angular_speed = 0.2
 angular_tolerance = rospy.get_param("~angular_tolerance", radians(2)) # degrees to radians
 
 
@@ -130,7 +126,11 @@ class NavController:
 		distance = 0
 		x_start, y_start = curr_pose_utm[0], curr_pose_utm[1]
 
-		while distance < (goal_distance - look_ahead) and not self.at_flag and not self.emergency_stop and not rospy.is_shutdown():
+		# NOTE: Changing this to distance < goal_distance (removing look-ahead part) would
+		# essentially create a step size since the basic_drive_6.py loop, for example, 
+		# discards any goal points within the look ahead to begin with.
+		# while distance < (goal_distance - look_ahead) and not self.at_flag and not self.emergency_stop and not rospy.is_shutdown():
+		while distance < goal_distance and not self.at_flag and not self.emergency_stop and not rospy.is_shutdown():
 
 			# while self.emergency_stop:
 			# 	print("Emergency stop message received, stopping rover..")

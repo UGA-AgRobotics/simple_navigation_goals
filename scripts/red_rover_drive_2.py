@@ -39,8 +39,8 @@ class SingleGoalNav(object):
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		# rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
 
-		rospy.Subscriber('/navsat/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
-		
+		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
+
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
 
@@ -196,6 +196,7 @@ class SingleGoalNav(object):
 		Angle from IMU in radians.
 		"""
 		self.current_angle = self.quat_to_angle(msg.orientation)
+		print("Current angle: {}".format(self.current_angle))
 
 
 
@@ -305,10 +306,14 @@ class SingleGoalNav(object):
 		print("Initial goal: {}".format(self.current_goal))
 
 
-		# Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
-		print("Starting driving routine.")
+
+
+		# # Sleep routine for testing:
+		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		# rospy.sleep(10)
+		# print("Starting driving routine.")
+
+
 
 
 
@@ -464,7 +469,7 @@ class SingleGoalNav(object):
 
 		d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]  # scalar diff b/w robot and course values
 
-		print("Determining goal point based on look-ahead of {}".foramt(self.look_ahead))
+		print("Determining goal point based on look-ahead of {}".format(self.look_ahead))
 
 		ind = d.index(min(d))
 

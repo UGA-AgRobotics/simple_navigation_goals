@@ -289,7 +289,8 @@ class SingleGoalNav(object):
 		rospy.sleep(2)  # give messages time to publish
 
 		_curr_utm = self.current_pos
-		self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+		# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
 		# self.current_goal = self.path_array[self.target_index]  # sets current goal
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
@@ -328,19 +329,16 @@ class SingleGoalNav(object):
 		# then begins to execute the turn.
 		###################################################################
 		# inc_counter = 0
-		while not rospy.is_shutdown() and not self.at_flag:
+		# while not rospy.is_shutdown() and not self.at_flag:
+		while not rospy.is_shutdown():
 
 			if self.at_flag:
 				print("At a flag in the course! Stopping the rover to take a sample.")
-				# rospy.sleep(0.1)
-				# self.articulator_pub.publish(self.actuator_stop)
-				# break
 				self.execute_flag_routine()
 
 			rospy.sleep(0.2)
 
 			_curr_utm = self.current_pos  # gets current utm
-			# _target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course)
 			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 

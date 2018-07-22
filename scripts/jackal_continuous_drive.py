@@ -303,7 +303,8 @@ class SingleGoalNav(object):
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
 			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
 
-			turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
+			# turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
+			turn_angle = orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
 
 			print("Initial turn angle: {}".format(turn_angle))
 

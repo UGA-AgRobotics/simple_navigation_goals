@@ -43,9 +43,8 @@ if __name__ == '__main__':
 
 	try:
 		flags_filename = sys.argv[1]
-		file_type = sys.argv[2]
 	except IndexError:
-		raise Exception("Must provide flags filename and type (i.e., geojson or json as arguments..")
+		raise Exception("Must provide flags filename..")
 
 	flags_file = open(flags_filename, 'r').read()
 	flags = json.loads(flags_file)

@@ -35,14 +35,14 @@ class FlagHandler:
 
 		# Subscribers:
 		rospy.Subscriber("/fix", NavSatFix, self.position_callback, queue_size=1)
-		rospy.Subscriber('/sample_points', String, self.sample_points_callback, queue_size=10)  # indicates to rover sample is collected, drive to next flag
+		rospy.Subscriber('/sample_points', String, self.sample_points_callback, queue_size=1)  # indicates to rover sample is collected, drive to next flag
 
 		# Publishers:
 		self.flag_publisher = rospy.Publisher('/at_flag', Bool, queue_size=1)
 		self.start_drive_publisher = rospy.Publisher('/start_driving', Bool, queue_size=1)
 		self.flag_index_publisher = rospy.Publisher('/flag_index', Int64, queue_size=1)
 
-		self.flag_tolerance = 12  # distance to flag to consider being at said flag (units: meters)
+		self.flag_tolerance = 0.2  # distance to flag to consider being at said flag (units: meters)
 		self.flag_index = 0  # Index of the robot's current flag it's going toward
 		self.flag_run_complete = False
 

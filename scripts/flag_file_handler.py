@@ -254,8 +254,10 @@ class FlagFileHandler(object):
 		# 	_csv_data.append([_lat, _lon])
 		for i in range(0, len(course_json.get('flags')) - 1, n_skip):
 			pos_obj = course_json['flags'][i]
-			_lat = pos_obj['decPos']['lat']
-			_lon = pos_obj['decPos']['lon']
+			# _lat = pos_obj['decPos']['lat']
+			# _lon = pos_obj['decPos']['lon']
+			_lat = pos_obj['utmPos']['easting']
+			_lon = pos_obj['utmPos']['northing']
 			_csv_data.append([_lat, _lon])
 
 
@@ -334,12 +336,12 @@ if __name__ == '__main__':
 	"""
 
 
-	# # Writes a course file from CSV file of lat/lons:
+
+	# # WRITES A COURSE FILE FROM CSV OF LAT/LONS:
 	# input_filename = sys.argv[1]
 	# output_filename = sys.argv[2]
 	# fh = FlagFileHandler()
 	# fh.convert_latlon_csv_to_course(input_filename, output_filename)
-
 	# # BATCH MODE!
 	# # for i in range(4, 12):
 	# # 	input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
@@ -347,6 +349,18 @@ if __name__ == '__main__':
 	# # 	fh = FlagFileHandler()
 	# # 	fh.convert_latlon_csv_to_course(input_filename, output_filename)
 
+
+
+
+
+
+	# # WRITES CSV OF POSITIONS FROM COURSE FILE:
+	# input_filename = sys.argv[1]
+	# output_filename = sys.argv[2]
+	# n_skip = int(sys.argv[3])
+
+	# fh = FlagFileHandler()
+	# fh.convert_course_to_latlon_csv(input_filename, output_filename, n_skip)
 	
 
 
@@ -354,7 +368,7 @@ if __name__ == '__main__':
 
 
 
-	# TEMPORARILY COMMENTED OUT:
+	# # CONVERTS BAG FILE OF /FIX TO COURSE FILE
 	filename = None
 	from_bag_file = False
 	n_skip = 1

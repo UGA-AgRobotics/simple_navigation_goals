@@ -295,7 +295,8 @@ class SingleGoalNav(object):
 
 
 		print("Initial target index: {}".format(self.target_index))
-		print("Total length of path array: {}".format(len(self.path_array)))
+		# print("Total length of path array: {}".format(len(self.path_array)))
+		print("Total length of path array: {}".format(len(path_array)))
 
 
 		_curr_utm = self.current_pos

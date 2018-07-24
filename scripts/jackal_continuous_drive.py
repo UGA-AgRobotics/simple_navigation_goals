@@ -18,6 +18,7 @@ from geometry_msgs.msg import Quaternion
 
 # Local package requirements:
 from nav_tracks import NavTracks
+from nav_nudge import NavNudge
 import orientation_transforms
 
 
@@ -29,7 +30,7 @@ class SingleGoalNav(object):
 	and its orientatiion. Subscribes to GPS and IMU topics.
 	"""
 
-	def __init__(self, path_json=None):
+	def __init__(self, path_json, nudge_factor=None):
 		
 		# Give the node a name
 		rospy.init_node('single_goal_nav')
@@ -55,8 +56,8 @@ class SingleGoalNav(object):
 		# Data type to move jackal:
 		self.move_cmd = Twist()
 
-		self.linear_speed = 0.2
-		self.angular_speed = 0.2
+		self.linear_speed = 0.3
+		self.angular_speed = 0.1
 
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
@@ -71,18 +72,20 @@ class SingleGoalNav(object):
 
 
 		self.path_json = path_json  # The path/course the red rover will follow!
+		if nudge_factor and isinstance(nudge_factor, float):
+			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
+			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
+			self.path_json = nn.nudged_course
 
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
 		# self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
-		self.look_ahead = 3.0  # meters
+		self.look_ahead = 1.5  # meters
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
 		self.target_index = 0  # index in course that's the goal position
-		self.index_fudge = 10
-		self.last_target_index = None
 		
 		self.current_goal = None  # [easting, northing] array
 		self.current_pos = None  # [easting, northing] array
@@ -93,7 +96,7 @@ class SingleGoalNav(object):
 		self.at_flag = False  # todo: subscribe to at_flag topic?
 		self.flag_index = None
 
-		print("Red rover driver ready.")
+		print("Jackal driver ready.")
 
 
 
@@ -102,7 +105,7 @@ class SingleGoalNav(object):
 		Keeps track of flag index from the flag node.
 		Sends this integer to the sample collector.
 		"""
-		print("Setting flag index to {}".format(msg.data))
+		# print("Setting flag index to {}".format(msg.data))
 		self.flag_index = msg.data
 
 
@@ -134,12 +137,12 @@ class SingleGoalNav(object):
 				print("Waiting for drive node to be started..")
 				return
 
-
-			# Gets track to follow:
-			nt = NavTracks()
-			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-			
-			self.path_array = path_array
+			if not isinstance(self.path_json, list):
+				# Gets track to follow:
+				nt = NavTracks()
+				path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
+			else:
+				path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
 
 			print("The Course: {}".format(path_array))
 			print("Starting path following routine..")
@@ -242,7 +245,8 @@ class SingleGoalNav(object):
 
 
 		print("Initial target index: {}".format(self.target_index))
-		print("Total length of path array: {}".format(len(self.path_array)))
+		# print("Total length of path array: {}".format(len(self.path_array)))
+		print("Total length of path array: {}".format(len(path_array)))
 
 
 		_curr_utm = self.current_pos
@@ -257,7 +261,7 @@ class SingleGoalNav(object):
 
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
+		rospy.sleep(20)
 		print("Starting driving routine.")
 
 
@@ -296,6 +300,7 @@ class SingleGoalNav(object):
 			if self.target_index == None:
 				print("Assuming end of course is reached! Stopping rover.")
 				self.shutdown()
+				return
 
 			self.current_goal = self.np_course.tolist()[self.target_index]
 			_curr_angle = self.current_angle  # gets current angle in radians
@@ -365,7 +370,7 @@ class SingleGoalNav(object):
 		"""
 		print("Making sure rover is stopped, then making request to take a sample..")
 		rospy.sleep(0.1)
-		self.actuator_pub.publish(self.actuator_stop)
+		self.cmd_vel.publish(Twist())
 
 		# Call sample collector service here..
 		########################################################################
@@ -377,8 +382,8 @@ class SingleGoalNav(object):
 		# self.throttle_pub.publish(self.throttle_max)
 		# rospy.sleep(1)
 
-		# print("Calling mico_leaf1 service.")
-		# self.call_micoleaf_service()
+		# print("Calling mico_leaf1 service, bin {}".format(self.flag_index))
+		# self.call_micoleaf_service(self.flag_index)
 		# print("mico_leaf1 service complete.")
 
 		# rospy.sleep(1)
@@ -415,17 +420,6 @@ class SingleGoalNav(object):
 		if it exceeds the turning boundaries of the red rover, which uses
 		the pivot data to determine.
 		"""
-		# _turn_val = self.no_turn_val  # initializes turn to not turn
-
-		# print("Angle to translate: {}".format(goal_angle))
-
-		# if goal_angle > 0:
-		# 	print("Turning right..")
-		# 	_turn_val = self.turn_right_val  # value to turn right
-		# elif goal_angle < 0:
-		# 	print("Turning left..")
-		# 	_turn_val = self.turn_left_val  # value to turn left
-
 
 		# Below move_cmd sequence is an attempt to go forward and turn at the same time with the jackal!!!
 		move_cmd = Twist()
@@ -480,14 +474,6 @@ class SingleGoalNav(object):
 		"""
 		print("Stopping the Jackal..")
 		self.cmd_vel.publish(Twist())
-		# print("Shutting down rover: stopping drive, lowering throttle rpms..")
-		# self.actuator_pub.publish(self.actuator_stop)
-		# rospy.sleep(1)
-		# self.articulator_pub.publish(self.no_turn_val)
-		# rospy.sleep(1)
-		# self.throttle_pub.publish(self.throttle_home)
-		# rospy.sleep(1)
-		# print("Red rover stopped.")
 
 
 
@@ -502,11 +488,20 @@ if __name__ == '__main__':
 	except IndexError:
 		raise IndexError("Course not specified. Add course filename as arg when running basic_drive_5.py")
 
+	try:
+		nudge_factor = float(sys.argv[2])
+	except Exception:
+		print("No nudge factor provided, assuming 0..")
+		nudge_factor = None
+
 	coursefile = open(course_filename, 'r')
 	course = json.loads(coursefile.read())
 
+	print("Course to follow: {}".format(course_filename))
+
 	try:
-		SingleGoalNav(course)
+		print("Nudge factor: {}".format(nudge_factor))
+		SingleGoalNav(course, nudge_factor)
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")
 		rospy.loginfo("Shutting down drive node!")

@@ -38,26 +38,16 @@ class SingleGoalNav(object):
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
-		# rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
-
 		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
-
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
-
-		# Publishers:
-		# self.actuator_pub = rospy.Publisher('/driver/linear_drive_actuator', Float64, queue_size=1)  # TODO: double check queue sizes..
-		# self.throttle_pub = rospy.Publisher('/driver/throttle', UInt8, queue_size=1)  # TODO: double check queue sizes..
-		# self.articulator_pub = rospy.Publisher('/driver/articulation_relay', Float64, queue_size=1)  # TODO: double check queue sizes..
 
 		# Publisher for controller jackal:
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 		
-		# Data type to move jackal:
-		self.move_cmd = Twist()
-
-		self.linear_speed = 0.3
-		self.angular_speed = 0.1
+		self.move_cmd = Twist()  # Data type to move jackal
+		self.linear_speed = 0.3  # jackal's linear speed
+		self.angular_speed = 0.1  # jackal's angular speed
 
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
@@ -68,10 +58,8 @@ class SingleGoalNav(object):
 		# Set the equivalent ROS rate variable
 		self.r = rospy.Rate(self.rate)
 
-		self.angle_tolerance = 0.1  # angle tolerance in degrees
-
-
 		self.path_json = path_json  # The path/course the red rover will follow!
+
 		if nudge_factor and isinstance(nudge_factor, float):
 			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
 			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
@@ -80,8 +68,9 @@ class SingleGoalNav(object):
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
-		# self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
-		self.look_ahead = 1.5  # meters
+		self.look_ahead = 1.5  # look-ahead for target index, in meters
+
+		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
@@ -138,7 +127,6 @@ class SingleGoalNav(object):
 				return
 
 			if not isinstance(self.path_json, list):
-				# Gets track to follow:
 				nt = NavTracks()
 				path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
 			else:
@@ -237,39 +225,23 @@ class SingleGoalNav(object):
 
 		rospy.sleep(2)  # give messages time to publish
 
-		_curr_utm = self.current_pos
-		# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
+		_curr_utm = self.current_pos  # gets current /fix
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
-		# self.current_goal = self.path_array[self.target_index]  # sets current goal
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
 
-		print("Initial target index: {}".format(self.target_index))
-		# print("Total length of path array: {}".format(len(self.path_array)))
 		print("Total length of path array: {}".format(len(path_array)))
-
-
-		_curr_utm = self.current_pos
-		# self.target_index = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
-		# self.current_goal = self.path_array[self.target_index]  # sets current goal
-
-		print("Initial target goal index: {}".format(self.target_index))
-		print("Initial goal: {}".format(self.current_goal))
-
+		print("Initial target index: {}".format(self.target_index))
+		print("Initial target UTM: {}".format(self.current_goal))
 
 
 
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
 		rospy.sleep(20)
+		
 		print("Starting driving routine.")
 
-
-
-
-
-		print(">>> Starting drive actuator to drive foward!")
-		
 		move_cmd = Twist()
 		move_cmd.linear.x = self.linear_speed
 
@@ -281,8 +253,6 @@ class SingleGoalNav(object):
 		# This loop calculates a turn angle a look-ahead distance away,
 		# then begins to execute the turn.
 		###################################################################
-		# inc_counter = 0
-		# while not rospy.is_shutdown() and not self.at_flag:
 		while not rospy.is_shutdown():
 
 			if self.at_flag:
@@ -292,7 +262,6 @@ class SingleGoalNav(object):
 			rospy.sleep(0.2)
 
 			_curr_utm = self.current_pos  # gets current utm
-			# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
 			print("target index: {}".format(self.target_index))
@@ -308,7 +277,6 @@ class SingleGoalNav(object):
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
 			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
 
-			# turn_angle = -1.0*orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
 			turn_angle = orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
 
 			print("Initial turn angle: {}".format(turn_angle))
@@ -322,11 +290,11 @@ class SingleGoalNav(object):
 					turn_angle = self.angle_trim
 
 				print("Telling Rover to turn {} degreess..".format(turn_angle))
-				# self.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
+
 				self.translate_angle_with_imu(turn_angle)
+
 				print("Finished turn.")
 
-			# inc_counter += 1
 
 		print("Finished driving course..")
 		print("Shutting down Jackal..")
@@ -398,17 +366,6 @@ class SingleGoalNav(object):
 		self.np_course = np.array(updated_path)  # updates np array of course
 
 		self.at_flag = False  # set at_flag to False after sample is collected..
-
-		# _curr_utm = self.current_pos
-		# self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
-
-		# print("New target index: {}".format(self.target_index))
-		# self.target_index += self.index_fudge
-		# print("Adding fudge factor to new target index: {}".format(self.target_index))
-
-		# print("Starting path following again..")
-		# rospy.sleep(1)
-		# self.start_path_following(updated_path, self.target_index)
 
 		return
 
@@ -500,7 +457,6 @@ if __name__ == '__main__':
 	print("Course to follow: {}".format(course_filename))
 
 	try:
-		print("Nudge factor: {}".format(nudge_factor))
 		SingleGoalNav(course, nudge_factor)
 	except rospy.ROSInterruptException:
 		rospy.loginfo("Navigation terminated.")

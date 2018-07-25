@@ -1,6 +1,5 @@
 export ARDUINO_BAUD=57600
 export ARDUINO_SERIAL_PORT=/dev/ttyACM0
-export FLAG_FILE=/home/administrator/jackal_navigation_workspace/src/simple_navigation_goals/goals/flags_2.json
 export PATH_FILE=/home/brad/Documents/ROS_Workspaces/simple_navigation_goals/src/simple_navigation_goals/courses/course_12_filled.json
 export REACH_BAUD=9600
 export REACH_IP=192.168.131.201

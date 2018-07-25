@@ -445,15 +445,14 @@ class SingleGoalNav(object):
 		self.np_course = np.array(updated_path)  # updates np array of course
 
 		self.at_flag = False  # set at_flag to False after sample is collected..
-		
+
 		print(">>> Reving up throttle before drive.")
 		rospy.sleep(1)
-		# self.throttle_pub.publish(self.throttle_drive_slow)  # sets to 100
-		self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+		self.throttle_pub.publish(self.throttle_drive_med)
 
 		print(">>> Starting drive actuator to drive foward!")
 		rospy.sleep(1)
-		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
+		self.actuator_pub.publish(self.actuator_drive_slow)
 
 		return
 

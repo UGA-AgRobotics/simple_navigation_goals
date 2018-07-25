@@ -30,10 +30,12 @@ class SingleGoalNav(object):
 	and its orientatiion. Subscribes to GPS and IMU topics.
 	"""
 
-	def __init__(self, path_json=None):
+	def __init__(self, path_json, nudge_factor=None):
 		
 		# Give the node a name
 		rospy.init_node('single_goal_nav')
+
+		print("Starting red rover driver node..")
 
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
@@ -343,6 +345,7 @@ class SingleGoalNav(object):
 			if self.target_index == None:
 				print("Assuming end of course is reached! Stopping rover.")
 				self.shutdown()
+				return
 
 			self.current_goal = self.np_course.tolist()[self.target_index]
 			_curr_angle = self.current_angle  # gets current angle in radians
@@ -442,6 +445,15 @@ class SingleGoalNav(object):
 		self.np_course = np.array(updated_path)  # updates np array of course
 
 		self.at_flag = False  # set at_flag to False after sample is collected..
+		
+		print(">>> Reving up throttle before drive.")
+		rospy.sleep(1)
+		# self.throttle_pub.publish(self.throttle_drive_slow)  # sets to 100
+		self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+
+		print(">>> Starting drive actuator to drive foward!")
+		rospy.sleep(1)
+		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
 
 		return
 

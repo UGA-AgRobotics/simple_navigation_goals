@@ -2,7 +2,6 @@
 
 import roslib
 import rospy
-from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool, Float64, UInt8, Int64
 from sensor_msgs.msg import NavSatFix
 from mico_leaf_msgs.srv import start_sample
@@ -14,7 +13,7 @@ from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import numpy as np
 from sensor_msgs.msg import Imu
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Twist
 
 # Local package requirements:
 from nav_tracks import NavTracks

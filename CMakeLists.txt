@@ -61,14 +61,6 @@ find_package(catkin REQUIRED COMPONENTS
 #   Service1.srv
 #   Service2.srv
 # )
-add_service_files(
-	FILES
-	JackalPos.srv
-	JackalRot.srv
-	SampleCollection.srv
-	DriveTest.srv
-	RedRoverRot.srv
-)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

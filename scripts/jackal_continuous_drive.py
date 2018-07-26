@@ -277,7 +277,7 @@ class SingleGoalNav(object):
 				self.execute_flag_routine()
 
 			if self.stop_gps:
-				print("Lost a fix for the GPS.. Stopping the rover until a fix is obtained..")
+				print("Lost GPS fix.. Stopping the rover until fix is obtained..")
 				self.wait_for_fix()
 
 			rospy.sleep(0.2)
@@ -362,6 +362,9 @@ class SingleGoalNav(object):
 			print("({}s) Waiting for GPS to obtain a fix..".format(i))
 			rospy.sleep(1.0)
 			i += 1
+
+		self.stop_gps = False
+		return
 
 
 

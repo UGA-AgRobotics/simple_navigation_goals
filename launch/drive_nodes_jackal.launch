@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<!-- Launches nodes that run on the remote control/monitor computer. --> 
+
+<launch>
+
+	<arg name="PATH_FILE" value="$(env PATH_FILE)" />
+	<arg name="REACH_IP" value="$(env REACH_IP)" />
+
+	<!-- Launches emlid_socketio_client node -->
+	<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen" args="$(arg REACH_IP)" />
+
+	<!-- Launches flag node -->
+	<node pkg="simple_navigation_goals" name="flag_node" type="flag_node.py" output="screen" />	
+
+	<!-- Launches rover drive node -->
+	<node pkg="simple_navigation_goals" name="jackal_continuous_drive" type="jackal_continuous_drive.py" output="screen" args="$(arg PATH_FILE)" />		
+
+</launch>

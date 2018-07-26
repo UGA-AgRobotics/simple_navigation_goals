@@ -19,7 +19,6 @@ import utm
 import json
 from std_msgs.msg import Bool, String, Int64
 from sensor_msgs.msg import NavSatFix
-import flag_file_handler  # local requirement
 import nav_tracks  # local requirement
 
 
@@ -48,11 +47,8 @@ class FlagHandler:
 
 		self.flags = flags  # where flags in format of list of utm pairs is stored
 
-		# if not self.flags:
-		# 	raise Exception("Must project jackal_flags_node with flags file")
-
-		# print("Flags list: {}".format(self.flags))
-		# print("Flag tolerance: {}".format(self.flag_tolerance))
+		print("Flag list: {}".format(self.flags))
+		print("Flag tolerance: {}".format(self.flag_tolerance))
 
 
 		print("jackal_flags_node ready.")
@@ -69,8 +65,6 @@ class FlagHandler:
 		print("Received message from /sample_points topic. Loading received flags..")
 		flags_obj = json.loads(msg.data)
 
-		print("Raw data: {}".format(msg.data))
-
 		print("Flags object: {}".format(flags_obj))
 
 
@@ -79,13 +73,6 @@ class FlagHandler:
 		
 		# For geojson flags:
 		flags_array = nt.get_flags_from_geojson(flags_obj)
-
-		# # For json flags:
-		# fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
-		# fh.flags = flags_obj
-		# fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
-		# flags_array = nt.get_track_from_course(fh.flags)  # for json flags
-
 
 		print("Flags: {}".format(flags_array))
 		self.flags = flags_array
@@ -172,19 +159,6 @@ class FlagHandler:
 
 
 if __name__ == '__main__':
-
-	# TODO: Add this routine as a function in FileHandler class:
-
-	# _flag_filename = sys.argv[1]
-
-	# # Reads in flags file:
-	# fh = flag_file_handler.FlagFileHandler()  # instantiates flag handler
-	# fh.read_flags_file(_flag_filename)  # reads in flags file
-	# fh.fill_out_flags_file()  # fills out any missing formats for flag data (dsm, dec, utm)
-
-	# # Uses nav_tracks module to convert flags file to list of [easting, northing] pairs:
-	# nt = nav_tracks.NavTracks()  # instantiates nav_tracks module
-	# flags = nt.get_track_from_course(fh.flags)  # converts flags file to list of utm pairs
 
 	try:
 		flag_handler = FlagHandler()

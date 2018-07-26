@@ -39,8 +39,9 @@ class SingleGoalNav(object):
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
-		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
-		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
+		rospy.Subscriber("/at_flag", Bool, self.flag_callback, queue_size=1)  # sub to /at_flag topic from jackal_flags_node.py
+		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback, queue_size=1)
+		rospy.Subscriber("/stop_gps", Bool, self.stop_gps_callback, queue_size=1)
 
 		# Publisher for controller jackal:
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
@@ -82,10 +83,25 @@ class SingleGoalNav(object):
 
 		self.np_course = None  # lazy np array version of course for certain manipulations
 
-		self.at_flag = False  # todo: subscribe to at_flag topic?
+		self.at_flag = False
 		self.flag_index = None
 
+		self.stop_gps = False
+
 		print("Jackal driver ready.")
+
+
+
+	def stop_gps_callback(self, msg):
+		"""
+		Subs to /stop_gps topic from emlid_socketio_client node.
+		Sends a True if rover loses a fix.
+		"""
+		if msg.data == True:
+			print("Received True on /stop_gps, rover has lost a fix..")
+			self.stop_gps = True
+		else:
+			self.stop_gps = False
 
 
 
@@ -105,7 +121,7 @@ class SingleGoalNav(object):
 		Subscribes to /at_flag topic that's being published by
 		jackal_flag_node.py. Needs to stop Jackal if at_flag is True
 		"""
-		if flag_msg.data == True or flag_msg == True:
+		if flag_msg.data == True:
 			print("Stopping cause we're at the flag!!!")
 			self.at_flag = True  # sets main at_flag to True for robot..
 		else:
@@ -134,10 +150,6 @@ class SingleGoalNav(object):
 
 			print("The Course: {}".format(path_array))
 			print("Starting path following routine..")
-
-			print("Setting throttle and drive actuator to home states..")
-			# self.throttle_pub.publish(self.throttle_home)
-			# self.actuator_pub.publish(self.actuator_home)
 
 			self.target_index = 0
 
@@ -214,10 +226,15 @@ class SingleGoalNav(object):
 			self.shutdown()
 			raise Exception("Path must be at least one point..")
 
-
+		i = 0
 		while not self.current_pos:
+			print("({}s) Waiting for GPS data from /fix topic..")
 			rospy.sleep(1)
-			print("Waiting for GPS data from /fix topic..")
+			i += 1
+
+		if self.stop_gps:
+			self.wait_for_fix()
+			
 
 		print("INITIAL TARGET: {}".format(init_target))
 
@@ -235,10 +252,10 @@ class SingleGoalNav(object):
 		print("Initial target UTM: {}".format(self.current_goal))
 
 
-
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(20)
+		rospy.sleep(10)
+
 		
 		print("Starting driving routine.")
 
@@ -258,6 +275,10 @@ class SingleGoalNav(object):
 			if self.at_flag:
 				print("At a flag in the course! Stopping the rover to take a sample.")
 				self.execute_flag_routine()
+
+			if self.stop_gps:
+				print("Lost a fix for the GPS.. Stopping the rover until a fix is obtained..")
+				self.wait_for_fix()
 
 			rospy.sleep(0.2)
 
@@ -329,6 +350,19 @@ class SingleGoalNav(object):
 			ind += 1
 
 		return None
+
+
+
+	def wait_for_fix(self):
+		"""
+		Hangs while until it receives a True on /stop_gps topic.
+		"""
+		i = 0
+		while self.stop_gps:
+			print("({}s) Waiting for GPS to obtain a fix..".format(i))
+			rospy.sleep(1.0)
+			i += 1
+
 
 
 

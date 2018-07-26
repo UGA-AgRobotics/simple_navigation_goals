@@ -117,7 +117,7 @@ class SingleGoalNav(object):
 		Keeps track of flag index from the flag node.
 		Sends this integer to the sample collector.
 		"""
-		print("Setting flag index to {}".format(msg.data))
+		# print("Setting flag index to {}".format(msg.data))
 		self.flag_index = msg.data
 
 

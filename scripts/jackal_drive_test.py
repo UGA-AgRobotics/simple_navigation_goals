@@ -27,6 +27,7 @@ import dubins
 from nav_tracks import NavTracks
 from nav_nudge import NavNudge
 import orientation_transforms
+import dubins_path as dp
 
 
 
@@ -43,7 +44,8 @@ class SingleGoalNav(object):
 		rospy.init_node('single_goal_nav')
 
 		# Subscribers:
-		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+		# rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback_multirow, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback, queue_size=1)  # sub to /at_flag topic from jackal_flags_node.py
@@ -54,8 +56,14 @@ class SingleGoalNav(object):
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 		
 		self.move_cmd = Twist()  # Data type to move jackal
+		
 		self.linear_speed = 0.3  # jackal's linear speed
+		self.linear_speed_row = 0.3
+		self.linear_speed_curve = 0.3
+		
 		self.angular_speed = 0.1  # jackal's angular speed
+		self.angular_speed_row = 0.1
+		self.angular_speed_curve = 0.3
 
 		# Set rospy to exectute a shutdown function when terminating the script
 		rospy.on_shutdown(self.shutdown)
@@ -76,11 +84,15 @@ class SingleGoalNav(object):
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
-		self.look_ahead = 1.5  # look-ahead for target index, in meters
+		self.look_ahead = 2.0  # look-ahead for target index, in meters
+		self.look_ahead_row = 1.5
+		self.look_ahead_curve = 0.5
 
 		self.angle_tolerance = 0.1  # angle tolerance in degrees
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
+		self.angle_trim_row = 2.0
+		self.angle_trim_curve = 25.0
 
 		self.target_index = 0  # index in course that's the goal position
 		
@@ -136,31 +148,50 @@ class SingleGoalNav(object):
 
 
 
-	def start_driving_callback(self, msg):
-		"""
-		Initiates driving routine.
-		The course file that was referenced when initiating the RedRoverDrive class
-		is converted to a list of [easting, northing] pairs, then initiate the rover
-		to drive and follow the course.
-		"""
+	# def start_driving_callback(self, msg):
+	# 	"""
+	# 	Initiates driving routine.
+	# 	The course file that was referenced when initiating the RedRoverDrive class
+	# 	is converted to a list of [easting, northing] pairs, then initiate the rover
+	# 	to drive and follow the course.
+	# 	"""
+	# 	if msg.data == True:
+
+	# 		if not self.path_json:
+	# 			print("Waiting for drive node to be started..")
+	# 			return
+
+	# 		if not isinstance(self.path_json, list):
+	# 			nt = NavTracks()
+	# 			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
+	# 		else:
+	# 			path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
+
+	# 		print("The Course: {}".format(path_array))
+	# 		print("Starting path following routine..")
+
+	# 		self.target_index = 0
+
+	# 		self.start_path_following(path_array, self.target_index)
+
+
+
+	def start_driving_callback_multirow(self, msg):
+
 		if msg.data == True:
 
 			if not self.path_json:
 				print("Waiting for drive node to be started..")
 				return
 
-			if not isinstance(self.path_json, list):
-				nt = NavTracks()
-				path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-			else:
-				path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
+			# starts following the first row in multirow course array:
+			path_array = self.path_json['rows']
 
-			print("The Course: {}".format(path_array))
-			print("Starting path following routine..")
 
 			self.target_index = 0
 
 			self.start_path_following(path_array, self.target_index)
+
 
 
 
@@ -241,7 +272,68 @@ class SingleGoalNav(object):
 
 		if self.stop_gps:
 			self.wait_for_fix()
-			
+
+
+		# pick first row in multirow array to start following:
+		# for row_obj in path_array:
+		for i in range(0, len(path_array) - 1):
+
+			# loop through row objects and start following down first row..
+
+			row_array = path_array[i]['row']  # row array
+			row_index = path_array[i]['index']  # row index
+
+			self.np_course = np.array(row_array)
+
+			_curr_utm = self.current_pos  # gets current utm
+			init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+
+			self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
+			self.look_ahead = self.look_ahead_row
+			self.angular_speed = self.angular_speed_row
+			self.linear_speed = self.linear_speed_row
+			self.execute_row_follow(row_array, init_target)  # follow down row
+
+			# when row is finished, run dubins to get to next row!
+
+			dubins_path = dp.handle_dubins(self.path_json, row_index, path_array[i+1]['index'])  # run dubins from current end or row to next row
+
+			print("dubins path: {}".format(dubins_path))
+
+			_curr_utm = self.current_pos  # gets current utm
+			init_target = self.calc_target_index(_curr_utm, 0, dubins_path[:,0], dubins_path[:,1])
+
+			print("now start following dubins path.. initial target: {}".format(init_target))
+
+			self.angle_trim = self.angle_trim_curve  # set angle trim to follow curve
+			self.look_ahead = self.look_ahead_curve
+			self.angular_speed = self.angular_speed_curve
+			self.linear_speed = self.linear_speed_curve
+			print("setting angle trim to {}, look ahead to {}".format(self.angle_trim, self.look_ahead))
+			self.execute_row_follow(dubins_path.tolist(), init_target)  # like execute_row_follow, but with more sensitive parameters
+
+			print("finished dubins curve, following next row!")
+
+		# run last row after above loop is finished!
+		row_array = path_array[len(path_array) - 1]['row']  # row array
+		row_index = path_array[len(path_array) - 1]['index']  # row index
+
+		print("Following last row! Row {}".format(row_index))
+
+		self.np_course = np.array(row_array)
+
+		_curr_utm = self.current_pos  # gets current utm
+		init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+
+		self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
+		self.look_ahead = self.look_ahead_row
+		self.angular_speed = self.angular_speed_row
+		self.linear_speed = self.linear_speed_row
+		self.execute_row_follow(row_array, init_target)  # follow down row
+
+
+
+	def execute_row_follow(self, path_array, init_target):
 
 		print("INITIAL TARGET: {}".format(init_target))
 
@@ -253,84 +345,19 @@ class SingleGoalNav(object):
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
-
 		print("Total length of path array: {}".format(len(path_array)))
 		print("Initial target index: {}".format(self.target_index))
 		print("Initial target UTM: {}".format(self.current_goal))
 
-
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
 		rospy.sleep(10)
-
-		
 		print("Starting driving routine.")
 
 		move_cmd = Twist()
 		move_cmd.linear.x = self.linear_speed
 
 		self.cmd_vel.publish(move_cmd)  # start driving straight!
-
-
-
-		# ###################################################################
-		# # This loop calculates a turn angle a look-ahead distance away,
-		# # then begins to execute the turn.
-		# ###################################################################
-		# while not rospy.is_shutdown():
-
-		# 	if self.at_flag:
-		# 		print("At a flag in the course! Stopping the rover to take a sample.")
-		# 		self.execute_flag_routine()
-
-		# 	if self.stop_gps:
-		# 		print("Lost GPS fix.. Stopping the rover until fix is obtained..")
-		# 		self.wait_for_fix()
-
-		# 	rospy.sleep(0.2)
-
-		# 	_curr_utm = self.current_pos  # gets current utm
-		# 	self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
-
-		# 	print("target index: {}".format(self.target_index))
-
-		# 	if self.target_index == None:
-		# 		print("Assuming end of course is reached! Stopping rover.")
-		# 		self.shutdown()
-		# 		return
-
-		# 	self.current_goal = self.np_course.tolist()[self.target_index]
-		# 	_curr_angle = self.current_angle  # gets current angle in radians
-
-		# 	A = (_curr_utm[0], _curr_utm[1], _curr_angle)
-		# 	B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
-
-		# 	turn_angle = orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
-
-		# 	print("Initial turn angle: {}".format(turn_angle))
-
-		# 	if abs(turn_angle) > abs(self.angle_tolerance):
-
-		# 		if turn_angle < -self.angle_trim:
-		# 			turn_angle = -self.angle_trim
-
-		# 		elif turn_angle > self.angle_trim:
-		# 			turn_angle = self.angle_trim
-
-		# 		print("Telling Rover to turn {} degreess..".format(turn_angle))
-
-		# 		self.translate_angle_with_imu(turn_angle)
-
-		# 		print("Finished turn.")
-
-
-		# print("Finished driving course..")
-		# print("Shutting down Jackal..")
-		# self.shutdown()
-
-
-
-	def execute_row_follow(self):
 
 		###################################################################
 		# This loop calculates a turn angle a look-ahead distance away,
@@ -348,21 +375,14 @@ class SingleGoalNav(object):
 				print("Lost GPS fix.. Stopping the rover until fix is obtained..")
 				self.wait_for_fix()
 
-			if self.target_index == None:
-				print("Assuming end of course is reached!")
-				# self.shutdown()
-
-
-				# TODO: using multi-row course file, run dubins, where A = current position,
-				# and B = the next row (have to use angle to determine direction to go).
-				
-
-				return
-
 			_curr_utm = self.current_pos  # gets current utm
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
 
 			print("target index: {}".format(self.target_index))
+
+			if self.target_index == None:
+				print("End of row is reached!")
+				return
 
 			self.current_goal = self.np_course.tolist()[self.target_index]
 			_curr_angle = self.current_angle  # gets current angle in radians

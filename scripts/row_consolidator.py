@@ -1,49 +1,11 @@
-import course_file_handler  # local requirement
+"""
+Combines all the separate row files into one
+file using the same JSON format as the row files.
+"""
+
 import sys
 import json
 import utm
-
-
-
-cfh = course_file_handler.CourseFileHandler()
-
-
-
-def convert_latlon_csv_to_course(input_filename, n_skip=1):
-	"""
-	Converts a CSV of lat, lons to a JSON formatted course.
-	"""
-	print("Opening course file..")
-	filein= open(input_filename, 'r')
-	file_data = filein.read()
-	filein.close()
-
-	# json_obj = {}
-	# json_obj['date'] = ""
-	# json_obj['location'] = ""
-	# json_obj['units'] = "dec"
-	# json_obj['flags'] = []
-
-	latlon_pairs = file_data.split('\n')
-
-	print("Lat/lons: {}".format(file_data))		
-
-	print("Building course file from lat, lons..")
-	for i in range(0, len(latlon_pairs) - 1, n_skip):
-		_lat = float(latlon_pairs[i].split(',')[0])
-		_lon = float(latlon_pairs[i].split(',')[1])
-		_pos_obj = {
-			'index': str(i),
-			'decPos': {
-				'lat': _lat,
-				'lon': _lon
-			}
-		}
-		json_obj['flags'].append(_pos_obj)
-
-	cfh.flags = json_obj  # sets flags object to fill out remaining data
-	cfh.fill_out_flags_file()  # fills out pos objects with dsm and utm formats
-	return cfh.flags
 
 
 
@@ -76,6 +38,37 @@ def convert_latlon_csv_to_course_array(input_filename, n_skip=1):
 
 
 
+def convert_rowfiles_to_course_array(input_filename, n_skip=1):
+	"""
+	Converts a set of course JSON files consisting of single rows,
+	and puts them into one array that's indexed by row.
+	Ex: {'date': "", 'location': "", 'rows': [{'index': 1, 'flags': [[x1, y1],..], 'row': [[x1,y1],..]}]}
+	"""
+	
+	# opens course file:
+	print("Opening course file..")
+	filein= open(input_filename, 'r')
+	file_data = filein.read()
+	filein.close()
+
+	row_obj = json.loads(file_data)  # get row data
+	row_data = row_obj['flags']  # get array of positions
+
+	result_array = []
+
+	# for pos_obj in row_data:
+	for i in range(0, len(row_data) - 1, n_skip):
+
+		easting = float(row_data[i]['utmPos']['easting'])  # gets easting utm value
+		northing = float(row_data[i]['utmPos']['northing'])  # gets northing utm value
+
+		result_array.append([easting, northing])
+
+	return result_array
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -92,14 +85,17 @@ if __name__ == '__main__':
 
 	for i in range(1, num_files + 1):
 
-		input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
+		# input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
+		input_filename = "../courses/course_{}_filled.json".format(i + 12)
+		print("Opening {}".format(input_filename))
 
 		row_obj = {
 			'index': str(i),
 			'row': []
 		}
-		# row_obj['row'] = convert_latlon_csv_to_course(input_filename, n_skip)  # get row data
-		row_obj['row'] = convert_latlon_csv_to_course_array(input_filename, n_skip)  # get row data
+
+		# row_obj['row'] = convert_latlon_csv_to_course_array(input_filename, n_skip)  # get row data
+		row_obj['row'] = convert_rowfiles_to_course_array(input_filename, n_skip)
 
 		field_data['rows'].append(row_obj)
 

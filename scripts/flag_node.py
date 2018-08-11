@@ -19,7 +19,7 @@ import utm
 import json
 from std_msgs.msg import Bool, String, Int64
 from sensor_msgs.msg import NavSatFix
-import nav_tracks  # local requirement
+from lib import nav_tracks  # local requirement
 
 
 

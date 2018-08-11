@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 
+"""
+This is the Red Rover version of jackal_drive_test.py.
+It'll follow rows with one set of parameters, then follow
+a curved path to the next row with the dubins model, changing the
+drive paramters for the curved path.
+"""
+
 import roslib
 import rospy
 from std_msgs.msg import Bool, Float64, UInt8, Int64
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix, Imu
 from mico_leaf_msgs.srv import start_sample
 import sys
 import math
@@ -12,37 +19,35 @@ import utm
 from math import radians, copysign, sqrt, pow, pi, degrees
 import PyKDL
 import numpy as np
-from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion, Twist
 
 # Local package requirements:
 from lib.nav_tracks import NavTracks
 from lib.nav_nudge import NavNudge
 from lib import orientation_transforms
+from lib import dubins_path as dp
 
 
 
-class SingleGoalNav(object):
+class RedRoverDriveDubins(object):
 	"""
 	Testing Rover navigation.
 	Drives based on rover's position, a look-ahead goal in a course,
-	and its orientatiion. Subscribes to GPS and IMU topics.
+	and its orientatiion. Subscribes to GPS and IMU topics. This routine
+	follows a multi-row course.
 	"""
 
 	def __init__(self, path_json, nudge_factor=None):
 		
 		# Give the node a name
-		rospy.init_node('single_goal_nav')
+		rospy.init_node('red_rover_drive_dubins')
 
 		print("Starting red rover driver node..")
 
 		# Subscribers:
-		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback_multirow, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/phidget/imu/data', Imu, self.rover_imu_callback, queue_size=1)
-
-		# rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
-
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback)
 
@@ -63,17 +68,26 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
+
+
+		# TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
 		if nudge_factor and isinstance(nudge_factor, float):
 			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
 			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
 			self.path_json = nn.nudged_course
 
+
+
 		self.path_array = None  # path converted to list of [easting, northing]
 
 		self.angle_tolerance = 0.1  # min angle at which rover calculates a turn
-		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
+		self.angle_trim = 2.0  # global angle trim variable
+		self.angle_trim_row = 2.0  # angle trim for straight driving
+		self.angle_trim_curve = 15.0  # angle trim for curved driving
 
 		self.look_ahead = 1.5  # this value navigated on test course well, but not after flag 
+		self.look_ahead_row = 1.5
+		self.look_ahead_curve = 0.5
 
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
@@ -85,19 +99,19 @@ class SingleGoalNav(object):
 		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
 		self.actuator_home = 0
 		self.actuator_stop = 0
-		self.actuator_drive_slow = 20
-		self.actuator_drive_med = 35
+		self.actuator_drive = None  # global actuator variable
+		self.actuator_drive_slow = 20  # actuator setting for slow drive
+		self.actuator_drive_med = 35  # actuator setting for medium drive
 
 		# Throttle settings (updated 07/05/18):
 		self.throttle_home = 120  # idle state
 		self.throttle_min = 120  # lowest throttle state
 		self.throttle_max = 60  # full throttle!
-		self.throttle_drive_slow = 100  # throttle setting for slow driving??
-		self.throttle_drive_med = 80
+		self.throttle_drive = None  # global throttle variable
+		self.throttle_drive_slow = 100  # throttle setting for slow driving
+		self.throttle_drive_med = 80  # throttle setting for medium driving
 
 		self.target_index = 0  # index in course that's the goal position
-		self.index_fudge = 10
-		self.last_target_index = None
 		
 		self.current_goal = None  # [easting, northing] array
 		self.current_pos = None  # [easting, northing] array
@@ -136,41 +150,22 @@ class SingleGoalNav(object):
 
 
 
-	def start_driving_callback(self, msg):
-		"""
-		Initiates driving routine.
-		The course file that was referenced when initiating the RedRoverDrive class
-		is converted to a list of [easting, northing] pairs, then initiate the rover
-		to drive and follow the course.
-		"""
+	def start_driving_callback_multirow(self, msg):
+
 		if msg.data == True:
 
 			if not self.path_json:
 				print("Waiting for drive node to be started..")
 				return
 
+			# starts following the first row in multirow course array:
+			path_array = self.path_json['rows']
 
-			if not isinstance(self.path_json, list):
-				# Gets track to follow:
-				nt = NavTracks()
-				path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-			else:
-				path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
-
-
-			# Gets track to follow:
-			# nt = NavTracks()
-			# path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-			# self.path_array = path_array
-
-			print("The Course: {}".format(path_array))
-			print("Starting path following routine..")
+			self.target_index = 0
 
 			print("Setting throttle and drive actuator to home states..")
 			self.throttle_pub.publish(self.throttle_home)
 			self.actuator_pub.publish(self.actuator_home)
-
-			self.target_index = 0
 
 			self.start_path_following(path_array, self.target_index)
 
@@ -278,10 +273,102 @@ class SingleGoalNav(object):
 			self.shutdown()
 			raise Exception("Path must be at least one point..")
 
-
+		i = 0
 		while not self.current_pos:
+			print("({}s) Waiting for GPS data from /fix topic..")
 			rospy.sleep(1)
-			print("Waiting for GPS data from /fix topic..")
+			i += 1
+
+		# if self.stop_gps:
+		# 	self.wait_for_fix()
+
+
+		# Iniates multirow loop, which loops the list of rows in path_array:
+		for i in range(0, len(path_array) - 1):
+
+			# Loops through row objects and starts following down first row in path array:
+
+			row_array = path_array[i]['row']  # row array
+			row_index = path_array[i]['index']  # row index
+
+			# Flips row array if rover is facing opposite direction it was recorded:
+			row_array = self.determine_drive_direction(row_array)
+
+			self.np_course = np.array(row_array)
+
+			_curr_utm = self.current_pos  # gets current utm
+			init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+
+			# Sets parameters for following a field row:
+			self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
+			self.look_ahead = self.look_ahead_row
+			self.throttle_drive = self.throttle_drive_med
+			self.actuator_drive = self.actuator_drive_med
+			
+			# Starts following field row:
+			self.execute_path_follow(row_array, init_target)  # follow down row
+
+			# Calculates dubins curve from exit -> entry row (which is next row in course for this example):
+			dubins_path = dp.handle_dubins(self.path_json, row_index, path_array[i+1]['index'])  # run dubins from current end or row to next row
+
+			_curr_utm = self.current_pos  # gets current utm
+			init_target = self.calc_target_index(_curr_utm, 0, dubins_path[:,0], dubins_path[:,1])
+
+			# Sets parameters for following a dubins curve:
+			self.angle_trim = self.angle_trim_curve  # set angle trim to follow curve
+			self.look_ahead = self.look_ahead_curve
+			self.throttle_drive = self.throttle_drive_slow
+			self.actuator_drive = self.actuator_drive_slow
+			
+			# Starts following dubins curve:
+			self.execute_path_follow(dubins_path.tolist(), init_target)  # like execute_path_follow, but with more sensitive parameters
+
+			print("Finished dubins curve, following next row!")
+
+
+		# Runs last row after above loop is finished:
+		row_array = path_array[len(path_array) - 1]['row']  # row array
+		row_index = path_array[len(path_array) - 1]['index']  # row index
+
+		print("Following last row! Row {}".format(row_index))
+
+		self.np_course = np.array(row_array)
+
+		_curr_utm = self.current_pos  # gets current utm
+		init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+
+		# Sets parameters for following field row:
+		self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
+		self.look_ahead = self.look_ahead_row
+		self.throttle_drive = self.throttle_drive_med
+		self.actuator_drive = self.actuator_drive_med
+
+		# Starts following field row:
+		self.execute_path_follow(row_array, init_target)  # follow down row
+
+
+
+	def start_path_following(self, path_array, init_target):
+
+		if not isinstance(path_array, list):
+			self.shutdown()
+			raise Exception("Path must be a list of [easting, northing] pairs..")
+
+		if len(path_array) < 1:
+			self.shutdown()
+			raise Exception("Path must be at least one point..")
+
+		i = 0
+		while not self.current_pos:
+			print("({}s) Waiting for GPS data from /fix topic..")
+			rospy.sleep(1)
+			i += 1
+
+
+
+
+
+	def execute_path_follow(self, path_array, init_target):
 
 		print("INITIAL TARGET: {}".format(init_target))
 
@@ -293,13 +380,9 @@ class SingleGoalNav(object):
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
-
-		print("Total length of path array: {}".format(len(path_array)))
-		print("Initial target index: {}".format(self.target_index))
-		print("Initial target UTM: {}".format(self.current_goal))
-
-
-
+		# print("Total length of path array: {}".format(len(path_array)))
+		# print("Initial target index: {}".format(self.target_index))
+		# print("Initial target UTM: {}".format(self.current_goal))
 
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
@@ -308,26 +391,28 @@ class SingleGoalNav(object):
 
 
 
+		##########################################################
+		# TODO: CHANGE THESE TO BE GENERAL SO THEY CAN BE SET
+		# BASED ON WHETHER IT'S STRAIGHT OR A CURVE.
+		##########################################################
+
 
 
 		print(">>> Reving up throttle before drive.")
 		rospy.sleep(1)
-		# self.throttle_pub.publish(self.throttle_drive_slow)  # sets to 100
-		self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+		# self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+		self.throttle_pub.publish(self.throttle_drive)
 
 		print(">>> Starting drive actuator to drive foward!")
 		rospy.sleep(1)
-		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
-
-
+		# self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
+		self.actuator_pub.publish(self.actuator_drive)
 
 
 		###################################################################
 		# This loop calculates a turn angle a look-ahead distance away,
 		# then begins to execute the turn.
 		###################################################################
-		# inc_counter = 0
-		# while not rospy.is_shutdown() and not self.at_flag:
 		while not rospy.is_shutdown():
 
 			if self.at_flag:
@@ -365,7 +450,6 @@ class SingleGoalNav(object):
 					turn_angle = self.angle_trim
 
 				print("Telling Rover to turn {} degreess..".format(turn_angle))
-				# self.translate_angle_with_imu(turn_angle)  # note: in degrees, converted to radians in nav_controller
 				self.translate_angle_with_imu(turn_angle)
 				print("Finished turn.")
 
@@ -373,6 +457,29 @@ class SingleGoalNav(object):
 		print("Finished driving course..")
 		print("Shutting down Jackal..")
 		self.shutdown()
+
+
+
+	def determine_drive_direction(self, current_row):
+		"""
+		Determines direction to drive down row.
+		If rover is facing 180 degrees from direction row was
+		recorded, then the course is flipped.
+		"""
+		angle_tolerance = math.radians(30)  # e.g., 180deg +/- 30deg
+
+		rover_angle = math.radians(ot.transform_imu_frame(math.degrees(self.current_angle)))
+		row_angle = dp.get_row_angle(current_row)  # gets angle of row
+
+		angle_diff = abs(rover_angle - row_angle)  # calculates angle difference
+
+		if angle_diff < math.pi + angle_tolerance and angle_diff > math.pi - angle_tolerance:
+			# rover is facing opposite direction row was recorded, flips row array around:
+			print("Flipping row array, rover is facing opposite direction from how it was recorded..")
+			current_row_flipped = [pos for pos in reversed(current_row)]  # flipped array of easting, northing pairs
+			return current_row_flipped
+		
+		return current_row
 		
 
 

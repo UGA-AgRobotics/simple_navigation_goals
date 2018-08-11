@@ -29,16 +29,6 @@ class ArticulatorTestNode:
 		rospy.Subscriber("/driver/test/run_articulator_test", Bool, self.articulator_test_callback)
 		rospy.Subscriber("/driver/test/execute_turn", Float64, self.articulator_turn_callback)
 
-		# Services:
-		# print("Waiting for get_red_rover_rot service..")
-		# rospy.wait_for_service('get_red_rover_rot')
-		# self.get_red_rover_rot = rospy.ServiceProxy('get_red_rover_rot', RedRoverRot)
-		# # print("get_red_rover_rot service ready.")
-		# print("Waiting for get_jackal_rot service..")
-		# rospy.wait_for_service('get_jackal_rot')
-		# self.get_jackal_rot = rospy.ServiceProxy('get_jackal_rot', JackalRot)
-		# print("get_jackal_rot service ready.")
-
 		# Articulation settings:
 		self.turn_left_val = 0  # publish this value to turn left
 		self.turn_right_val = 2  # publish this value to turn right
@@ -214,12 +204,7 @@ class ArticulatorTestNode:
 		turn_angle = 0
 		last_angle = self.get_jackal_rot().jackal_rot  # get angle from IMU (in radians)
 
-		# while abs(turn_angle) < abs(goal_angle) and not self.at_flag and not rospy.is_shutdown():
 		while abs(turn_angle) < abs(radians(goal_angle)) and not rospy.is_shutdown():
-
-			# self.cmd_vel.publish(move_cmd)
-
-			# print("Current angle: {}, Current pivot: {}".format(self.last_angle, self.current_pivot))
 
 			self.articulator_pub.publish(_turn_val)
 
@@ -236,43 +221,7 @@ class ArticulatorTestNode:
 
 		self.articulator_pub.publish(self.no_turn_val)  # stop turning once goal angle is reached.
 
-		# if self.emergency_stop:
-		# 	print("Emergency stop from RF remote received, stopping turning routine..")
-
 		return
-
-
-
-	# def imu_turn_controller(self):
-	# 	"""
-	# 	An abbreviated version of the p2p_drive_routine in basic_drive_6.
-	# 	Determines turn angle with IMU between it's position, A, and the
-	# 	goal position, B.
-	# 	"""
-
-	# 	curr_pose_utm = self.nav_controller.get_current_position()
-	# 	curr_angle = self.nav_controller.get_jackal_rot().jackal_rot
-
-	# 	print("Jackal's position in UTM: {}, Jackal's angle: rad-{}, deg-{}".format(curr_pose_utm, curr_angle, degrees(curr_angle)))
-
-	# 	print("GOAL POSITION: {}".format(goal_pos))
-
-	# 	A = (curr_pose_utm[0], curr_pose_utm[1], curr_angle)
-	# 	B = (goal_pos[0], goal_pos[1], goal_pos[2])  # NOTE: B's orientation currently hardcoded for testing..
-
-	# 	# NOTE: perhaps add angle tolerance here, e.g., if turn_angle is
-	# 	# 0 +/- angle_tolerance, then don't turn the rover!
-	# 	##########################################################################
-	# 	turn_angle = orientation_transforms.initiate_angle_transform(A, B)
-
-	# 	print("Turn angle, pre-tolerance filter: {}".format(turn_angle))
-
-	# 	if abs(turn_angle) > abs(self.angle_tolerance):
-	# 	# if turn_angle != 0:
-	# 		# Determine angle to turn based on IMU..
-	# 		print("Telling Jackal to turn {} degreess..".format(turn_angle))
-	# 		self.nav_controller.execute_turn(radians(turn_angle))
-	# 		print("Finished turn.")
 
 
 

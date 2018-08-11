@@ -24,10 +24,10 @@ from geometry_msgs.msg import Quaternion
 import dubins
 
 # Local package requirements:
-from nav_tracks import NavTracks
-from nav_nudge import NavNudge
-import orientation_transforms
-import dubins_path as dp
+from lib.nav_tracks import NavTracks
+from lib.nav_nudge import NavNudge
+from lib import orientation_transforms as ot
+from lib import dubins_path as dp
 
 
 
@@ -76,10 +76,14 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
+
+
+		# TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
 		if nudge_factor and isinstance(nudge_factor, float):
 			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
 			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
 			self.path_json = nn.nudged_course
+
 
 
 		self.path_array = None  # path converted to list of [easting, northing]
@@ -148,34 +152,6 @@ class SingleGoalNav(object):
 
 
 
-	# def start_driving_callback(self, msg):
-	# 	"""
-	# 	Initiates driving routine.
-	# 	The course file that was referenced when initiating the RedRoverDrive class
-	# 	is converted to a list of [easting, northing] pairs, then initiate the rover
-	# 	to drive and follow the course.
-	# 	"""
-	# 	if msg.data == True:
-
-	# 		if not self.path_json:
-	# 			print("Waiting for drive node to be started..")
-	# 			return
-
-	# 		if not isinstance(self.path_json, list):
-	# 			nt = NavTracks()
-	# 			path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
-	# 		else:
-	# 			path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
-
-	# 		print("The Course: {}".format(path_array))
-	# 		print("Starting path following routine..")
-
-	# 		self.target_index = 0
-
-	# 		self.start_path_following(path_array, self.target_index)
-
-
-
 	def start_driving_callback_multirow(self, msg):
 
 		if msg.data == True:
@@ -187,11 +163,9 @@ class SingleGoalNav(object):
 			# starts following the first row in multirow course array:
 			path_array = self.path_json['rows']
 
-
 			self.target_index = 0
 
 			self.start_path_following(path_array, self.target_index)
-
 
 
 
@@ -274,47 +248,50 @@ class SingleGoalNav(object):
 			self.wait_for_fix()
 
 
-		# pick first row in multirow array to start following:
-		# for row_obj in path_array:
+		# Iniates multirow loop, which loops the list of rows in path_array:
 		for i in range(0, len(path_array) - 1):
 
-			# loop through row objects and start following down first row..
+			# Loops through row objects and starts following down first row in path array:
 
 			row_array = path_array[i]['row']  # row array
 			row_index = path_array[i]['index']  # row index
+
+			# Flips row array if rover is facing opposite direction it was recorded:
+			row_array = self.determine_drive_direction(row_array)
 
 			self.np_course = np.array(row_array)
 
 			_curr_utm = self.current_pos  # gets current utm
 			init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
 
+			# Sets parameters for following a field row:
 			self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
 			self.look_ahead = self.look_ahead_row
 			self.angular_speed = self.angular_speed_row
 			self.linear_speed = self.linear_speed_row
-			self.execute_row_follow(row_array, init_target)  # follow down row
+			
+			# Starts following field row:
+			self.execute_path_follow(row_array, init_target)  # follow down row
 
-			# when row is finished, run dubins to get to next row!
-
+			# Calculates dubins curve from exit -> entry row (which is next row in course for this example):
 			dubins_path = dp.handle_dubins(self.path_json, row_index, path_array[i+1]['index'])  # run dubins from current end or row to next row
-
-			print("dubins path: {}".format(dubins_path))
 
 			_curr_utm = self.current_pos  # gets current utm
 			init_target = self.calc_target_index(_curr_utm, 0, dubins_path[:,0], dubins_path[:,1])
 
-			print("now start following dubins path.. initial target: {}".format(init_target))
-
+			# Sets parameters for following a dubins curve:
 			self.angle_trim = self.angle_trim_curve  # set angle trim to follow curve
 			self.look_ahead = self.look_ahead_curve
 			self.angular_speed = self.angular_speed_curve
 			self.linear_speed = self.linear_speed_curve
-			print("setting angle trim to {}, look ahead to {}".format(self.angle_trim, self.look_ahead))
-			self.execute_row_follow(dubins_path.tolist(), init_target)  # like execute_row_follow, but with more sensitive parameters
+			
+			# Starts following dubins curve:
+			self.execute_path_follow(dubins_path.tolist(), init_target)  # like execute_path_follow, but with more sensitive parameters
 
-			print("finished dubins curve, following next row!")
+			print("Finished dubins curve, following next row!")
 
-		# run last row after above loop is finished!
+
+		# Runs last row after above loop is finished:
 		row_array = path_array[len(path_array) - 1]['row']  # row array
 		row_index = path_array[len(path_array) - 1]['index']  # row index
 
@@ -325,15 +302,42 @@ class SingleGoalNav(object):
 		_curr_utm = self.current_pos  # gets current utm
 		init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
 
+		# Sets parameters for following field row:
 		self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
 		self.look_ahead = self.look_ahead_row
 		self.angular_speed = self.angular_speed_row
 		self.linear_speed = self.linear_speed_row
-		self.execute_row_follow(row_array, init_target)  # follow down row
+
+		# Starts following field row:
+		self.execute_path_follow(row_array, init_target)  # follow down row
 
 
 
-	def execute_row_follow(self, path_array, init_target):
+	def determine_drive_direction(self, current_row):
+		"""
+		Determines direction to drive down row.
+		If rover is facing 180 degrees from direction row was
+		recorded, then the course is flipped.
+		"""
+		angle_tolerance = math.radians(30)  # e.g., 180deg +/- 30deg
+
+		rover_angle = math.radians(ot.transform_imu_frame(math.degrees(self.current_angle)))
+		row_angle = dp.get_row_angle(current_row)  # gets angle of row
+
+		angle_diff = abs(rover_angle - row_angle)  # calculates angle difference
+
+		if angle_diff < math.pi + angle_tolerance and angle_diff > math.pi - angle_tolerance:
+			# rover is facing opposite direction row was recorded, flips row array around:
+			print("Flipping row array, rover is facing opposite direction from how it was recorded..")
+			current_row_flipped = [pos for pos in reversed(current_row)]  # flipped array of easting, northing pairs
+			return current_row_flipped
+		
+		return current_row
+
+
+
+
+	def execute_path_follow(self, path_array, init_target):
 
 		print("INITIAL TARGET: {}".format(init_target))
 
@@ -345,9 +349,9 @@ class SingleGoalNav(object):
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
-		print("Total length of path array: {}".format(len(path_array)))
-		print("Initial target index: {}".format(self.target_index))
-		print("Initial target UTM: {}".format(self.current_goal))
+		# print("Total length of path array: {}".format(len(path_array)))
+		# print("Initial target index: {}".format(self.target_index))
+		# print("Initial target UTM: {}".format(self.current_goal))
 
 		# Sleep routine for testing:
 		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
@@ -390,7 +394,7 @@ class SingleGoalNav(object):
 			A = (_curr_utm[0], _curr_utm[1], _curr_angle)
 			B = (self.current_goal[0], self.current_goal[1], 0)  # note: B angle not used..
 
-			turn_angle = orientation_transforms.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
+			turn_angle = ot.initiate_angle_transform(A, B)  # note: flipped sign of turn from imu
 
 			print("Initial turn angle: {}".format(turn_angle))
 

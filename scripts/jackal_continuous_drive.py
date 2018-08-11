@@ -17,9 +17,9 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
 
 # Local package requirements:
-from nav_tracks import NavTracks
-from nav_nudge import NavNudge
-import orientation_transforms
+from lib.nav_tracks import NavTracks
+from lib.nav_nudge import NavNudge
+from lib import orientation_transforms
 
 
 

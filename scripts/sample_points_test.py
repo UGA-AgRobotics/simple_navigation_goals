@@ -11,7 +11,7 @@ import rospy
 import json
 import sys
 from std_msgs.msg import String
-from nav_tracks import NavTracks
+from lib.nav_tracks import NavTracks
 
 
 

@@ -71,10 +71,10 @@ class RedRoverDriveDubins(object):
 
 
 		# TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
-		if nudge_factor and isinstance(nudge_factor, float):
-			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
-			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
-			self.path_json = nn.nudged_course
+		# if nudge_factor and isinstance(nudge_factor, float):
+		# 	print("Using nudge factor of {} to shift the course!".format(nudge_factor))
+		# 	nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
+		# 	self.path_json = nn.nudged_course
 
 
 

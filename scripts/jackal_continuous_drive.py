@@ -63,8 +63,10 @@ class SingleGoalNav(object):
 
 		if nudge_factor and isinstance(nudge_factor, float):
 			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
-			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
-			self.path_json = nn.nudged_course
+			# nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
+			# self.path_json = nn.nudged_course
+			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
+			self.path_json = nn.nudge_course_row()
 
 
 		self.path_array = None  # path converted to list of [easting, northing]

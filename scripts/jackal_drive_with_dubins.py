@@ -26,6 +26,7 @@ import dubins
 # Local package requirements:
 from lib.nav_tracks import NavTracks
 from lib.nav_nudge import NavNudge
+from lib.drive_patterns import DrivePatterns
 from lib import orientation_transforms as ot
 from lib import dubins_path as dp
 
@@ -78,11 +79,12 @@ class SingleGoalNav(object):
 
 
 
-		# TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
-		if nudge_factor and isinstance(nudge_factor, float):
-			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
-			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
-			self.path_json = nn.nudged_course
+		self.nudge_factor = nudge_factor
+		# # TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
+		# if nudge_factor and isinstance(nudge_factor, float):
+		# 	print("Using nudge factor of {} to shift the course!".format(nudge_factor))
+		# 	nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
+		# 	self.path_json = nn.nudged_course
 
 
 
@@ -259,9 +261,15 @@ class SingleGoalNav(object):
 			# Flips row array if rover is facing opposite direction it was recorded:
 			row_array = self.determine_drive_direction(row_array)
 
+			# # Shifts row course over if GPS has an offset:
+			# if self.nudge_factor and isinstance(self.nudge_factor, float):
+			# 	print("Using nudge factor of {} to shift the course!".format(self.nudge_factor))
+			# 	nn = NavNudge(json.dumps(path_json), self.nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
+			# 	self.path_json = nn.nudged_course
+
 			self.np_course = np.array(row_array)
 
-			_curr_utm = self.current_pos  # gets current utm
+			_curr_utm = self.current_pos  # gets current position
 			init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
 
 			# Sets parameters for following a field row:
@@ -476,18 +484,19 @@ class SingleGoalNav(object):
 
 		# Call sample collector service here..
 		########################################################################
+		
+		# Test Routine (just delays 10 seconds):
 		print("Pausing 10s to simulate a sample collection routine..")
 		rospy.sleep(10)
 
+		# Actual routine (calls mico leaf service):
 		# print("Pausing 5s, then calling mico leaf service..")
 		# rospy.sleep(5)
 		# self.throttle_pub.publish(self.throttle_max)
 		# rospy.sleep(1)
-
 		# print("Calling mico_leaf1 service, bin {}".format(self.flag_index))
 		# self.call_micoleaf_service(self.flag_index)
 		# print("mico_leaf1 service complete.")
-
 		# rospy.sleep(1)
 		# self.throttle_pub.publish(self.throttle_drive_slow)
 		# rospy.sleep(1)

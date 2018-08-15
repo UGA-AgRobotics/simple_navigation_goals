@@ -138,6 +138,9 @@ class SingleGoalNav(object):
 		is converted to a list of [easting, northing] pairs, then initiate the rover
 		to drive and follow the course.
 		"""
+
+		print("Start driving callback initiated..")
+
 		if msg.data == True:
 
 			if not self.path_json:

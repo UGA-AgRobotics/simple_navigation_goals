@@ -113,6 +113,8 @@ class SingleGoalNav(object):
 
 		self.stop_gps = False
 
+		self.row_skip = 1  # rows to skip when traveling (e.g., 1 = don't skip, go to next row; 2 = every other row)
+
 		print("Jackal driver ready.")
 
 
@@ -251,7 +253,8 @@ class SingleGoalNav(object):
 
 
 		# Iniates multirow loop, which loops the list of rows in path_array:
-		for i in range(0, len(path_array) - 1):
+		# for i in range(0, len(path_array) - 1):
+		for i in range(0, len(path_array), self.row_skip):
 
 			# Loops through row objects and starts following down first row in path array:
 

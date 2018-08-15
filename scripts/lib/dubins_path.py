@@ -104,11 +104,11 @@ def plot_handler(configurations, exit_row, entry_row, q0, q1, show=True):
 
 
 
-def handle_dubins(course_data, exit_row_index, entry_row_index, angle_tolerance=0.523599):
+def handle_dubins(course_data, exit_row_index, entry_row_index, turning_radius, step_size, angle_tolerance=0.523599):
 
-	# Dubins parameters:
-	turning_radius = 1.5
-	step_size = 0.5
+	# # Dubins parameters:
+	# turning_radius = 1.5
+	# step_size = 0.5
 
 	exit_row, entry_row = [], []
 
@@ -158,7 +158,7 @@ def handle_dubins(course_data, exit_row_index, entry_row_index, angle_tolerance=
 	path = dubins.shortest_path(q0, q1, turning_radius)
 	configurations, _ = path.sample_many(step_size)
 
-	plot_handler(configurations, exit_row, entry_row, q0, q1)
+	# plot_handler(configurations, exit_row, entry_row, q0, q1)
 
 	dubins_course = np.array(configurations)
 
@@ -170,6 +170,10 @@ def handle_dubins(course_data, exit_row_index, entry_row_index, angle_tolerance=
 
 
 if __name__ == '__main__':
+
+	# Dubins parameters:
+	turning_radius = 1.5
+	step_size = 0.5
 
 	x0, y0, theta0 = 0, 0, 0
 	x1, y1, theta1 = 1, 1, math.pi
@@ -184,4 +188,4 @@ if __name__ == '__main__':
 	course_data = json.loads(filein.read())
 	filein.close()
 
-	handle_dubins(course_data, exit_row_index, entry_row_index, angle_tolerance)
+	handle_dubins(course_data, exit_row_index, entry_row_index, turning_radius, step_size, angle_tolerance)

@@ -20,6 +20,7 @@ from geometry_msgs.msg import Quaternion
 from lib.nav_tracks import NavTracks
 from lib.nav_nudge import NavNudge
 from lib import orientation_transforms
+from lib import dubins_path as dp
 
 
 
@@ -61,12 +62,12 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-		if nudge_factor and isinstance(nudge_factor, float):
-			print("Using nudge factor of {} to shift the course!".format(nudge_factor))
-			# nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
-			# self.path_json = nn.nudged_course
-			nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
-			self.path_json = nn.nudge_course_row()
+		# if nudge_factor and isinstance(nudge_factor, float):
+		# 	print("Using nudge factor of {} to shift the course!".format(nudge_factor))
+		# 	# nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
+		# 	# self.path_json = nn.nudged_course
+		# 	nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)
+		# 	self.path_json = nn.nudge_course_row()
 
 
 		self.path_array = None  # path converted to list of [easting, northing]
@@ -221,6 +222,36 @@ class SingleGoalNav(object):
 
 
 
+	def determine_drive_direction(self, current_row):
+		"""
+		Determines direction to drive down row.
+		If rover is facing 180 degrees from direction row was
+		recorded, then the course is flipped.
+		"""
+		angle_tolerance = math.radians(45)  # e.g., 180deg +/- 30deg
+
+		rover_angle = math.radians(orientation_transforms.transform_imu_frame(math.degrees(self.current_angle)))
+		row_angle = dp.get_row_angle(current_row)  # gets angle of row
+
+		angle_diff = abs(rover_angle - row_angle)  # calculates angle difference
+
+		print("Row angle: {}".format(math.degrees(row_angle)))
+		print("Rover's angle: {}".format(math.degrees(rover_angle)))
+		print("Angle diff b/w rover and row: {}".format(math.degrees(angle_diff)))
+
+		if angle_diff < math.pi + angle_tolerance and angle_diff > math.pi - angle_tolerance:
+			# rover is facing opposite direction row was recorded, flips row array around:
+			print("Flipping row array, rover is facing opposite direction from how it was recorded..")
+			current_row_flipped = [pos for pos in reversed(current_row)]  # flipped array of easting, northing pairs
+
+			print("Flipped Course: {}".format(current_row_flipped))
+
+			return current_row_flipped
+		
+		return current_row
+
+
+
 	def start_path_following(self, path_array, init_target):
 
 		if not isinstance(path_array, list):
@@ -239,6 +270,19 @@ class SingleGoalNav(object):
 
 		if self.stop_gps:
 			self.wait_for_fix()
+
+
+
+		# Testing course flip function for when Jackal is facing opposite direction relative to the courses recorded direction:
+		path_array = self.determine_drive_direction(path_array)
+
+
+		# # Testing nudge module's nudge of row array (currently called multirow):
+		# if self.nudge_factor and isinstance(self.nudge_factor, float):
+		# 	print("Using nudge factor of {} to shift the row!".format(self.nudge_factor))
+		# 	nn = NavNudge(path_array, self.nudge_factor, 0.2)
+		# 	path_array = nn.nudge_course_multirow()
+
 			
 
 		print("INITIAL TARGET: {}".format(init_target))
@@ -249,6 +293,9 @@ class SingleGoalNav(object):
 
 		_curr_utm = self.current_pos  # gets current /fix
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
+
+		print("target index: {}".format(self.target_index))
+
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
 

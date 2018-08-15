@@ -26,7 +26,7 @@ import dubins
 # Local package requirements:
 from lib.nav_tracks import NavTracks
 from lib.nav_nudge import NavNudge
-from lib.drive_patterns import DrivePatterns
+# from lib.drive_patterns import DrivePatterns
 from lib import orientation_transforms as ot
 from lib import dubins_path as dp
 
@@ -57,13 +57,16 @@ class SingleGoalNav(object):
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
 		
 		self.move_cmd = Twist()  # Data type to move jackal
+
+		self.dubins_min_turn = 2.5  # default (red rover's min turn radius) min turn for dubins curves
+		self.dubins_step_size = 0.5  # default step-size for dubins curves
 		
 		self.linear_speed = 0.3  # jackal's linear speed
 		self.linear_speed_row = 0.3
 		self.linear_speed_curve = 0.3
 		
 		self.angular_speed = 0.1  # jackal's angular speed
-		self.angular_speed_row = 0.1
+		self.angular_speed_row = 0.3
 		self.angular_speed_curve = 0.3
 
 		# Set rospy to exectute a shutdown function when terminating the script
@@ -77,16 +80,7 @@ class SingleGoalNav(object):
 
 		self.path_json = path_json  # The path/course the red rover will follow!
 
-
-
 		self.nudge_factor = nudge_factor
-		# # TODO: HAVE THIS NUDGE FEATURE WITHIN DRIVE ROUTINE TO NUDGE ONLY STRAIGHT ROWS:
-		# if nudge_factor and isinstance(nudge_factor, float):
-		# 	print("Using nudge factor of {} to shift the course!".format(nudge_factor))
-		# 	nn = NavNudge(json.dumps(path_json), nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
-		# 	self.path_json = nn.nudged_course
-
-
 
 		self.path_array = None  # path converted to list of [easting, northing]
 
@@ -98,7 +92,7 @@ class SingleGoalNav(object):
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 		self.angle_trim_row = 2.0
-		self.angle_trim_curve = 25.0
+		self.angle_trim_curve = 15.0
 
 		self.target_index = 0  # index in course that's the goal position
 		
@@ -254,21 +248,17 @@ class SingleGoalNav(object):
 
 		# Iniates multirow loop, which loops the list of rows in path_array:
 		# for i in range(0, len(path_array) - 1):
-		for i in range(0, len(path_array), self.row_skip):
+		for i in range(0, len(path_array) - 1, self.row_skip):
 
 			# Loops through row objects and starts following down first row in path array:
 
 			row_array = path_array[i]['row']  # row array
 			row_index = path_array[i]['index']  # row index
 
+			print("Following row index {}".format(row_index))
+
 			# Flips row array if rover is facing opposite direction it was recorded:
 			row_array = self.determine_drive_direction(row_array)
-
-			# # Shifts row course over if GPS has an offset:
-			# if self.nudge_factor and isinstance(self.nudge_factor, float):
-			# 	print("Using nudge factor of {} to shift the course!".format(self.nudge_factor))
-			# 	nn = NavNudge(json.dumps(path_json), self.nudge_factor, 0.2)  # NOTE: HARD-CODED SPACING FACTOR TO 0.2M FOR NOW
-			# 	self.path_json = nn.nudged_course
 
 			self.np_course = np.array(row_array)
 
@@ -284,8 +274,15 @@ class SingleGoalNav(object):
 			# Starts following field row:
 			self.execute_path_follow(row_array, init_target)  # follow down row
 
+			# Change these if different than defaults (defaults: 2.5m, 0.5m):
+			self.dubins_min_turn = 1.5
+			self.dubins_step_size = 0.2
+
+			# next_row_index = path_array[i+1]['index']  # next row rover is traveling to
+			next_row_index = path_array[i + self.row_skip]  # NOTE: This'll skip rows, but will probs trigger IndexError near end of array (add checking)
+
 			# Calculates dubins curve from exit -> entry row (which is next row in course for this example):
-			dubins_path = dp.handle_dubins(self.path_json, row_index, path_array[i+1]['index'])  # run dubins from current end or row to next row
+			dubins_path = dp.handle_dubins(self.path_json, row_index, next_row_index, self.dubins_min_turn, self.dubins_step_size)  # run dubins from current end or row to next row
 
 			_curr_utm = self.current_pos  # gets current utm
 			init_target = self.calc_target_index(_curr_utm, 0, dubins_path[:,0], dubins_path[:,1])
@@ -306,12 +303,27 @@ class SingleGoalNav(object):
 		row_array = path_array[len(path_array) - 1]['row']  # row array
 		row_index = path_array[len(path_array) - 1]['index']  # row index
 
+		
+
+		# Flips row array if rover is facing opposite direction it was recorded:
+		row_array = self.determine_drive_direction(row_array)  # added this to see if it'll fix post-nudge issue
+
+
+
 		print("Following last row! Row {}".format(row_index))
+
+		print("Row array: {}".format(row_array))
 
 		self.np_course = np.array(row_array)
 
 		_curr_utm = self.current_pos  # gets current utm
 		init_target = self.calc_target_index(_curr_utm, 0, self.np_course[:,0], self.np_course[:,1])
+
+
+		# NOTE: Where the drive/row directions are checked, if the last index in a row comes back
+		# as the initial target index (like the one above, before the drive loop), then check to see
+		# how far it is from the first point in course, and based on that info, flip the course!!!
+
 
 		# Sets parameters for following field row:
 		self.angle_trim = self.angle_trim_row  # set angle trim to follow row (mostly straight)
@@ -352,22 +364,38 @@ class SingleGoalNav(object):
 
 		print("INITIAL TARGET: {}".format(init_target))
 
-		self.np_course = np.array(path_array)  # sets numpy array of course\
+		self.np_course = np.array(path_array)  # sets numpy array of course
 
 		rospy.sleep(2)  # give messages time to publish
 
 		_curr_utm = self.current_pos  # gets current /fix
 		self.target_index = self.calc_target_index(_curr_utm, init_target, self.np_course[:,0], self.np_course[:,1])  # try using int_target
+		
+
+		if self.target_index == None:
+
+
+			# TODO: Where the drive/row directions are checked, if the last index in a row comes back
+			# as the initial target index (like the one above, before the drive loop), then check to see
+			# how far it is from the first point in course, and based on that info, flip the course!!!
+
+
+			print("Assuming end of row is reached!")
+			return
+
+
 		self.current_goal = path_array[self.target_index]  # sets current goal
 
 		# print("Total length of path array: {}".format(len(path_array)))
 		# print("Initial target index: {}".format(self.target_index))
 		# print("Initial target UTM: {}".format(self.current_goal))
 
-		# Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
-		rospy.sleep(10)
-		print("Starting driving routine.")
+
+		# # Sleep routine for testing:
+		# print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		# rospy.sleep(10)
+		# print("Starting driving routine.")
+
 
 		move_cmd = Twist()
 		move_cmd.linear.x = self.linear_speed
@@ -453,6 +481,7 @@ class SingleGoalNav(object):
 
 		# loops list, starting at closest point to robot:
 		for _diff in d[ind:]:
+			print("diff: {}".format(_diff))
 			if _diff > self.look_ahead:
 				return ind				
 			ind += 1

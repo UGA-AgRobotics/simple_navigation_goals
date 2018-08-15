@@ -32,7 +32,7 @@ def transform_angle_by_quadrant(initial_angle, x_diff, y_diff):
 	if x_diff > 0 and y_diff > 0:
 		print("p1 in quadrant: {}".format(1))
 		# Point B in quadrant 1..
-		return degrees(initial_angle)
+		return degrees(initial_angle)  # NOTE: does this shift with Q4 for the row-flip case described below in Q4 conditional??
 	elif x_diff < 0 and y_diff > 0:
 		print("p1 in quadrant: {}".format(2))
 		# Point B in quadrant 2..
@@ -44,7 +44,8 @@ def transform_angle_by_quadrant(initial_angle, x_diff, y_diff):
 	elif x_diff > 0 and y_diff < 0:
 		print("p1 in quadrant: {}".format(4))
 		# Point B in quadrant 4..
-		return 360 - degrees(initial_angle)
+		return 360 - degrees(initial_angle)  # this is the default setting for this quadrant (robot traveling order course was recorded)
+		# return degrees(initial_angle)  # this works when robot is traveling on row that has been flipped (why?)
 	elif x_diff == 0 and y_diff == 0:
 		# No change in angle..
 		return 0.0

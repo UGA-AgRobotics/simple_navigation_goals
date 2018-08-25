@@ -87,7 +87,8 @@ class SingleGoalNav(object):
 		self.actuator_max = 47  # accounting for scale factor on arduino (138 - 90) - 1
 		self.actuator_home = 0
 		self.actuator_stop = 0
-		self.actuator_drive_slow = 20
+		self.actuator_drive_slow = 20  # this is the min actuator setting to drive forward
+		# self.actuator_drive_slow = 15
 		self.actuator_drive_med = 35
 
 		# Throttle settings (updated 07/05/18):
@@ -95,7 +96,7 @@ class SingleGoalNav(object):
 		self.throttle_min = 120  # lowest throttle state
 		self.throttle_max = 60  # full throttle!
 		self.throttle_drive_slow = 100  # throttle setting for slow driving??
-		self.throttle_drive_med = 80
+		self.throttle_drive_med = 70
 
 		self.target_index = 0  # index in course that's the goal position
 		self.index_fudge = 10
@@ -109,6 +110,9 @@ class SingleGoalNav(object):
 
 		self.at_flag = False  # todo: subscribe to at_flag topic?
 		self.flag_index = None
+
+		self.stale_gps_stop = False
+		self.last_pos = None
 
 		print("Red rover driver ready.")
 
@@ -174,7 +178,15 @@ class SingleGoalNav(object):
 
 			self.target_index = 0
 
-			self.start_path_following(path_array, self.target_index)
+			###############################################################
+			# SWITCH BETWEEN PATH FOLLOWING OR BASIC DRIVE HERE           #
+			#															  #
+			# * start_path_following - the actual path following routine. #
+			# * run_basic_drive - blindly drives a few seconds then stops.#
+			###############################################################
+
+			# self.start_path_following(path_array, self.target_index)  # follow a path
+			self.run_basic_drive()  # drive a few seconds blindly, then stop
 
 
 
@@ -188,10 +200,26 @@ class SingleGoalNav(object):
 
 		NOTE: Does the target index need to increment here and/or turn loop?
 
-		"""		
+		"""	
+
+
 		_lat, _lon = msg.latitude, msg.longitude
 		curr_pose_utm = utm.from_latlon(_lat, _lon)
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
+
+		# if self.current_pos == self.last_pos and self.stale_gps_stop == False:
+		# 	print("Previous position and current position are the same, assuming /fix topic is lagging/stale..")
+		# 	# print("Waiting for change in GPS /fix topic before driving again")
+		# 	print("Running the shutdown() routine..")
+		# 	self.stale_gps_stop = True
+		# 	self.shutdown()
+		# 	rospy.sleep(2)
+		# else:
+		# 	self.stale_gps_stop = False
+
+		# self.last_pos = self.current_pos
+
+
 
 
 
@@ -212,15 +240,16 @@ class SingleGoalNav(object):
 		rospy.sleep(1)
 
 		print("Reving throttle up!")
-		self.throttle_pub.publish(90)
+		# self.throttle_pub.publish(90)
+		self.throttle_pub.publish(self.throttle_max)
 
 		print("Pausing 5s before publishing to actuator..")
 		rospy.sleep(5)
 
 		print("Initiating drive.")
-		# self.actuator_pub.publish(self.actuator_drive_slow)  # +1 from actuator home
-		self.actuator_pub.publish(self.actuator_max)
-		rospy.sleep(3)  # driving for as long as delay last
+		self.actuator_pub.publish(self.actuator_drive_slow)  # +1 from actuator home
+		# self.actuator_pub.publish(self.actuator_drive_med)
+		rospy.sleep(2)  # driving for as long as delay last
 
 		print("Stopping rover by setting drive actuator to home state..")
 		self.actuator_pub.publish(self.actuator_stop)  # set hydrolyic actuator to home state (aka stop)??
@@ -228,9 +257,9 @@ class SingleGoalNav(object):
 
 		rospy.sleep(2)
 		print("Calling mico leaf service to collect samples..")
-		self.call_micoleaf_service(1)
+		self.call_micoleaf_service(9)
 
-		self.throttle_pub.publish(self.throttle_min)  # throttle back down
+		self.throttle_pub.publish(self.throttle_max)  # throttle back down
 
 		return
 
@@ -315,11 +344,13 @@ class SingleGoalNav(object):
 		print(">>> Reving up throttle before drive.")
 		rospy.sleep(1)
 		# self.throttle_pub.publish(self.throttle_drive_slow)  # sets to 100
-		self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+		# self.throttle_pub.publish(self.throttle_drive_med)  # sets to 100
+		self.throttle_pub.publish(self.throttle_max)
 
 		print(">>> Starting drive actuator to drive foward!")
 		rospy.sleep(1)
 		self.actuator_pub.publish(self.actuator_drive_slow)  # sets to 20
+		# self.actuator_pub.publish(self.actuator_drive_med)  # sets to 30
 
 
 
@@ -336,6 +367,10 @@ class SingleGoalNav(object):
 				print("At a flag in the course! Stopping the rover to take a sample.")
 				self.execute_flag_routine()
 
+			# while self.stale_gps_stop:
+			# 	rospy.sleep(1)
+			# 	print("Waiting for GPS to get a fresh value..")
+
 			rospy.sleep(0.2)
 
 			_curr_utm = self.current_pos  # gets current utm
@@ -346,6 +381,9 @@ class SingleGoalNav(object):
 			if self.target_index == None:
 				print("Assuming end of course is reached! Stopping rover.")
 				self.shutdown()
+				rospy.sleep(5)
+				print("Calling mico leaf service one more time at the end of row!!!!")
+				self.execute_flag_routine()
 				return
 
 			self.current_goal = self.np_course.tolist()[self.target_index]
@@ -400,6 +438,7 @@ class SingleGoalNav(object):
 
 		# loops list, starting at closest point to robot:
 		for _diff in d[ind:]:
+			print("Diff b/w gps and target index: {}".format(_diff))
 			if _diff > self.look_ahead:
 				return ind				
 			ind += 1
@@ -418,25 +457,25 @@ class SingleGoalNav(object):
 
 		# Simulate sample collector service call with delay:
 		########################################################################
-		print("Pausing 10s to simulate a sample collection routine..")
-		rospy.sleep(10)
+		# print("Pausing 10s to simulate a sample collection routine..")
+		# rospy.sleep(10)
 		########################################################################
 
 
 		# Call actual sample collector service here:
 		########################################################################		
-		# print("Pausing 5s, then calling mico leaf service..")
-		# rospy.sleep(5)
-		# self.throttle_pub.publish(self.throttle_max)
-		# rospy.sleep(1)
+		print("Pausing 5s, then calling mico leaf service..")
+		rospy.sleep(5)
+		self.throttle_pub.publish(self.throttle_max)
+		rospy.sleep(1)
 
-		# print("Calling mico_leaf1 service.")
-		# self.call_micoleaf_service()
-		# print("mico_leaf1 service complete.")
+		print("Calling mico_leaf1 service.")
+		self.call_micoleaf_service(9)
+		print("mico_leaf1 service complete.")
 
-		# rospy.sleep(1)
-		# self.throttle_pub.publish(self.throttle_drive_slow)
-		# rospy.sleep(1)
+		rospy.sleep(1)
+		self.throttle_pub.publish(self.throttle_max)
+		rospy.sleep(1)
 		########################################################################
 
 		_curr_utm = self.current_pos
@@ -449,7 +488,7 @@ class SingleGoalNav(object):
 
 		print(">>> Reving up throttle before drive.")
 		rospy.sleep(1)
-		self.throttle_pub.publish(self.throttle_drive_med)
+		self.throttle_pub.publish(self.throttle_max)
 
 		print(">>> Starting drive actuator to drive foward!")
 		rospy.sleep(1)

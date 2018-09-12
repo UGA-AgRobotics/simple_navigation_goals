@@ -7,32 +7,45 @@ import time
 import sys
 import roslib
 import rospy
-from std_msgs.msg import String
+import json
+from std_msgs.msg import String, Bool
 
 
 
 class EmlidSocketIOClient:
 
-	def __init__(self, reach_ip=None, reach_port=None, test_routine=False):
+	def __init__(self, emlid_ip=None, emlid_port=None, test_routine=False):
 
 		print("Starting emlid_socketio_client node..")
 
 		rospy.init_node('emlid_socketio_client', anonymous=True, disable_signals=True)
 
+		# Subscribers:
+
+
+		# Publishers:
 		self.solution_status_publisher = rospy.Publisher("/emlid_solution_status", String, queue_size=1)
 		self.gps_stop_publisher = rospy.Publisher("/stop_gps", Bool, queue_size=1)  # stop until GPS gets Fix again
+		# self.gps_pos_publisher = rospy.Publisher('/gps_pos', )
 
-		self.reach_ip = reach_ip or '192.168.131.201'
-		self.reach_port = reach_port or 80
+		self.emlid_ip = emlid_ip or '192.168.131.201'
+		self.emlid_port = emlid_port or 80
 
-		print("Reach IP: {}, Reach Port: {}".format(self.reach_ip, self.reach_port))
+		print("Reach IP: {}, Reach Port: {}".format(self.emlid_ip, self.emlid_port))
 
-		self.reach_keys = [
+		self.emlid_keys = [
 			'solution status',
 			'baseline length float (m)',
 			'ratio for ar validation',
-			'age of differential (s)'
+			'age of differential (s)',
+			'pos llh (deg,m) base',
+			'pos llh single (deg,m) rover',
+			'# of satellites base',
+			'# of satellites rover'
 		]
+		self.rover_pos_key = 'pos llh single (deg,m) rover'
+		self.rover_status_key = 'solution status'
+		self.rover_ar_ratio = 'ratio for ar validation'
 
 		self.status_options = ['fix', 'float', 'single', '-']
 		self.off_signal = 'off'  # turn all LEDs off on arduino
@@ -46,11 +59,11 @@ class EmlidSocketIOClient:
 		# 	self.connect_to_socketio_server()  # initiate connection to emlid's socketio server
 		# self.connect_to_socketio_server()
 
-		rospy.sleep(1)
+		rospy.sleep(2)
 
 		print("Connecting to SocketIO server from Emlid reach unit..")
 
-		with SocketIO(self.reach_ip, self.reach_port, LoggingNamespace) as socketIO:
+		with SocketIO(self.emlid_ip, self.emlid_port, LoggingNamespace) as socketIO:
 
 			socketIO.on('connect', self.on_connect)
 			socketIO.on('disconnect', self.on_disconnect)
@@ -89,41 +102,20 @@ class EmlidSocketIOClient:
 
 	def on_status_broadcast(self, msg):
 
+		try:
+			emlid_data = json.loads(json.dumps(msg))  # re-serialize for the safety (ensures it's JSON-safe data coming in)
+		except Exception as e:
+			logging.warning("Could not reserialize incoming JSON..")
+			raise
+
 		if not msg:
 			print("No message from Emlid socket.io server.. Sending stop message to rover on /stop_gps..")
 			self.gps_stop_publisher.publish(True)
 			return
 
-		try:
-			solution_status = msg.get('solution status')  # gets solution status from emlid socketio server
-		except Exception as e:
-			print("Exception: {}".format(e))
-			print("Exception getting 'solution status' key from Emlid socketio server.. Sending message to stop rover on /stop_gps..")
-			self.gps_stop_publisher.publish(True)
-			return
-
-		# self.send_status_to_arduino(solution_status)
-		if self.check_for_fix(solution_status):
-			self.solution_status_publisher.publish(str(status))  # todo: use json, not just str?
-		else:
-			self.gps_stop_publisher.publish(True)
-
-			
-
-	# def send_status_to_arduino(self, status):
-	# 	"""
-	# 	Sends status ('fix', 'float', 'single', or '-') to arduino for
-	# 	status light indicator circuit.
-	# 	"""
-	# 	if status in self.status_options:
-	# 		print("Send '{}' message to arduino via {} topic".format(status, '/emlid_solution_status'))
-	# 		self.solution_status_publisher.publish(str(status))
-	# 	else:
-	# 		# raise Exception("Status {} not recognized..")
-	# 		print("Status not recognized.. Stopping rover..")
-	# 		self.gps_stop_publisher.publish(True)
-
-	# 	return
+		print("GPS Position: {}".format(emlid_data[self.rover_pos_key]))
+		print("GPS Status: {}".format(emlid_data[self.rover_status_key]))
+		print("GPS AR Validation Ratio: {}".format(emlid_data[self.rover_ar_ratio]))
 
 
 
@@ -148,30 +140,13 @@ class EmlidSocketIOClient:
 
 
 
-
-
-
-
-
-
 if __name__ == '__main__':
 
-	_reach_ip = None
-	_reach_port = None
-
-	try:
-		_reach_ip = sys.argv[1]
-		_reach_port = sys.argv[2]
-
-	except IndexError:
-		print("No inputs provided for reach ip or reach port, so using defaults..")
-		print("Trying to use ROS get_param, assuming it's being run as ROS node instead of from terminal..")
-
-		_reach_ip = rospy.get_param('REACH_IP', '192.168.131.201')  # IP address of Reach unit on RoverNet
-		_reach_port = rospy.get_param('REACH_PORT', 80)  # connect to Reach HTTP port
+	_emlid_ip = sys.argv[1]
+	_emlid_port = sys.argv[2]
 
 	try:
 		# Starts Emlid Reach RS SocketIO Client:
-		emlidsock = EmlidSocketIOClient(_reach_ip, _reach_port)
+		emlidsock = EmlidSocketIOClient(_emlid_ip, _emlid_port)
 	except rospy.ROSInterruptException:
 		raise

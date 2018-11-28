@@ -9,6 +9,7 @@ import roslib
 import rospy
 import json
 from std_msgs.msg import String, Bool
+from sensor_msgs.msg import NavSatFix
 
 
 
@@ -26,7 +27,8 @@ class EmlidSocketIOClient:
 		# Publishers:
 		self.solution_status_publisher = rospy.Publisher("/emlid_solution_status", String, queue_size=1)
 		self.gps_stop_publisher = rospy.Publisher("/stop_gps", Bool, queue_size=1)  # stop until GPS gets Fix again
-		# self.gps_pos_publisher = rospy.Publisher('/gps_pos', )
+		# self.gps_pos_publisher = rospy.Publisher('/gps_pos',
+		self.gps_pos_publisher = rospy.Publiser("/fix", NavSatFix, queue_size=1)
 
 		self.emlid_ip = emlid_ip or '192.168.131.201'
 		self.emlid_port = emlid_port or 80
@@ -116,6 +118,32 @@ class EmlidSocketIOClient:
 		print("GPS Position: {}".format(emlid_data[self.rover_pos_key]))
 		print("GPS Status: {}".format(emlid_data[self.rover_status_key]))
 		print("GPS AR Validation Ratio: {}".format(emlid_data[self.rover_ar_ratio]))
+
+		self.publish_emlid_pos(emlid_data)
+
+
+
+	def publish_emlid_pos(self, emlid_data):
+		"""
+		Parses the lat,lon,alt string into a NavSatFix object, 
+		and publishes to /fix topic.
+		"""
+
+		emlid_list = emlid_data.split(',')
+		emlid_lat = emlid_list[0]
+		emlid_lon = emlid_list[1]
+		emlid_alt = emlid_list[2]
+
+		print("Emlid lat,lon,alt items: {}, {}, {}".format(emlid_lat, emlid_lon, emlid_alt))
+
+		navsat_pos = NavSatFix()
+		navsat_pos['latitude'] = emlid_lat
+		navsat_pos['longitude'] = emlid_lon
+		navsat_pos['altitude'] = emlid_alt
+
+		print("Publishing to /fix: {}".format(navsat_pos))
+
+		self.gps_pos_publisher.publish(navsat_pos)
 
 
 

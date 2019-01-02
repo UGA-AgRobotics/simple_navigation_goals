@@ -38,6 +38,7 @@ class SingleGoalNav(object):
 
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
+		rospy.Subscriber("/stop_driving", Bool, self.stop_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback, queue_size=1)  # sub to /at_flag topic from jackal_flags_node.py
@@ -92,6 +93,16 @@ class SingleGoalNav(object):
 		self.stop_gps = False
 
 		print("Jackal driver ready.")
+
+
+
+	def stop_driving_callback(self, msg):
+		"""
+		Stops the jackal if it receives True from
+		Rover Watch "Stop path following" button.
+		"""
+		print("Received stop message from Rover Watch.")
+		self.shutdown()
 
 
 
@@ -173,7 +184,10 @@ class SingleGoalNav(object):
 
 		NOTE: Does the target index need to increment here and/or turn loop?
 
-		"""		
+		"""
+
+		print("incoming position data: {}".format(msg))
+
 		_lat, _lon = msg.latitude, msg.longitude
 		curr_pose_utm = utm.from_latlon(_lat, _lon)
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]

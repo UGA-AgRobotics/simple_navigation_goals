@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+
+<!-- Launches nodes that run on the Jackal's onboard computer -->
+
+
+
+<!-- Defined Args: -->
+<arg name="REACH_SERIAL_PORT" value="$(env REACH_SERIAL_PORT)" />
+<arg name="REACH_BAUD" value="$(env REACH_BAUD)" />
+<arg name="REACH_IP" value="$(env REACH_IP)" />
+<arg name="port" default="$(env ARDUINO_SERIAL_PORT)" />
+<arg name="baud" default="$(env ARDUINO_BAUD)" />
+<arg name="RUN_FLAG_NODE" value="$(optenv RUN_FLAG_NODE false)" />
+
+<!-- Note: NAV_TYPE as of 12/31/18 can be 'single' or 'multi' -->
+<arg name="NAV_TYPE" value="$(optenv NAV_TYPE single)" />
+
+<arg name="PATH_FILE" value="$(env PATH_FILE)" />
+
+
+
+<!-- Defined Nodes: -->
+
+<!-- Jackal Arduino Node (if running an arduino node connected via usb) -->
+<!-- <node pkg="rosserial_python" name="rosserial" type="serial_node.py" output="screen" respawn="true">
+	<param name="port" value="$(arg port)" />
+	<param name="baud" value="$(arg baud)" />
+</node> -->
+
+<!-- Launches file for rosbridge server -->
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+<!-- Launches Emlid SocketIO Server Node -->
+<node pkg="simple_navigation_goals" name="emlid_socketio_client" type="emlid_socketio_client.py" output="screen" args="$(arg REACH_IP)" />
+
+<!-- Launches flag node -->
+<node pkg="simple_navigation_goals" name="flag_node" type="flag_node.py" output="screen" />	
+<!-- Launches rover drive node depending on NAV_TYPE (single or multi) -->
+<node if="$(eval NAV_TYPE == 'single')" pkg="simple_navigation_goals" name="jackal_drive_singlerow" type="jackal_drive_singlerow.py" output="screen" args="$(arg PATH_FILE)" />
+<node if="$(eval NAV_TYPE == 'multi')" pkg="simple_navigation_goals" name="jackal_drive_mutlirow" type="jackal_drive_mutlirow.py" output="screen" args="$(arg PATH_FILE)" />
+
+<!-- Launches flag node if RUN_FLAG_NODE true -->
+<node pkg="simple_navigation_goals" name="flag_node" type="flag_node.py" output="screen" if="$(arg RUN_FLAG_NODE)" />
+
+
+
+</launch>

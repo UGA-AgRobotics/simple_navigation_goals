@@ -202,7 +202,6 @@ class SingleGoalNav(object):
 
 		"""	
 
-
 		_lat, _lon = msg.latitude, msg.longitude
 		curr_pose_utm = utm.from_latlon(_lat, _lon)
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]

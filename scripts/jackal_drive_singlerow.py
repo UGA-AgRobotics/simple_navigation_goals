@@ -186,7 +186,7 @@ class SingleGoalNav(object):
 
 		"""
 
-		print("incoming position data: {}".format(msg))
+		# print("incoming position data: {}".format(msg))
 
 		_lat, _lon = msg.latitude, msg.longitude
 		curr_pose_utm = utm.from_latlon(_lat, _lon)

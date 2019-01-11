@@ -5,7 +5,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool, Float64, UInt8, Int64
 from sensor_msgs.msg import NavSatFix
-from mico_leaf_msgs.srv import start_sample
+# from mico_leaf_msgs.srv import start_sample
 import sys
 import math
 import json
@@ -202,28 +202,28 @@ class SingleGoalNav(object):
 
 
 
-	def call_micoleaf_service(self, flag_ind):
+	# def call_micoleaf_service(self, flag_ind):
 
-		# Mico Leaf Service:
-		print("Waiting for /mico_leaf1/sample_service..")
-		rospy.wait_for_service('/mico_leaf1/sample_service')
-		self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
-		print("start_sample_collection service ready.")
+	# 	# Mico Leaf Service:
+	# 	print("Waiting for /mico_leaf1/sample_service..")
+	# 	rospy.wait_for_service('/mico_leaf1/sample_service')
+	# 	self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
+	# 	print("start_sample_collection service ready.")
 
-		rospy.sleep(2)
+	# 	rospy.sleep(2)
 
-		print("Calling arm service to collect samples.")
+	# 	print("Calling arm service to collect samples.")
 
-		try:
-			test_val = self.start_sample_collection(flag_ind)
-			print("val returned: {}".format(test_val.end_sample))
-		except rospy.ServiceException as e:
-			print("an exception happend.")
-			print("exception: {}".format(e))
+	# 	try:
+	# 		test_val = self.start_sample_collection(flag_ind)
+	# 		print("val returned: {}".format(test_val.end_sample))
+	# 	except rospy.ServiceException as e:
+	# 		print("an exception happend.")
+	# 		print("exception: {}".format(e))
 
-		print("Samples completed!")
+	# 	print("Samples completed!")
 
-		return
+	# 	return
 
 
 

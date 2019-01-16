@@ -42,6 +42,8 @@ class BagHandler:
 		# _bag_results = {}  # parsed bag results
 		_bag_results_list = []  # list of bag results
 
+		print("rosbag: {}".format(_bag))
+
 		for topic in self.topics:
 			_topic_results = {
 				'topic': topic,
@@ -124,19 +126,30 @@ class BagHandler:
 
 
 
+	def get_path_array_from_rosbag(self, fix_topic="/fix"):
+		"""
+		Gets /fix data from rosbag and returns an list
+		of [easting, northing] pairs.
+		"""
+		_bag = rosbag.Bag(self.filename)
 
+		path_array = []
+		for topic, msg, t in _bag.read_messages(topics=self.topics):
+			if topic == fix_topic:
+				utm_pos = utm.from_latlon(float(msg.latitude), float(msg.longitude))
+				pos_array = [utm_pos[0], utm_pos[1]]
+				path_array.append(pos_array)
+		return path_array
 
 
 
 def main(bagfilename, output_filename, topic_list):
-
 	print("Getting {} topics data from {} bagfile".format(topic_list, bagfilename))
 	bagobj = BagHandler(bagfilename, topic_list)
 	bagobj.get_data_from_bag()
 	bagobj.save_data_from_bag(output_filename)
 	print("Data saved as: {}".format(output_filename))
 		
-
 
 
 

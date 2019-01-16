@@ -40,6 +40,7 @@ def convert_latlon_csv_to_course_array(input_filename, n_skip=1):
 
 def convert_rowfiles_to_course_array(input_filename, n_skip=1):
 	"""
+	Builds path file for multirow navigation routine.
 	Converts a set of course JSON files consisting of single rows,
 	and puts them into one array that's indexed by row.
 	Ex: {'date': "", 'location': "", 'rows': [{'index': 1, 'flags': [[x1, y1],..], 'row': [[x1,y1],..]}]}
@@ -78,15 +79,17 @@ if __name__ == '__main__':
 	n_skip = int(sys.argv[3])
 
 	field_data = {
-		'name': "Peanut Field 2018",
-		'date': "July 2018",
+		'name': "",
+		'date': "",
 		'rows': []
 	}
 
 	for i in range(1, num_files + 1):
 
 		# input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
-		input_filename = "../courses/course_{}_filled.json".format(i + 12)
+		# input_filename = "../courses/course_{}_filled.json".format(i + 12)
+		input_filename = "../courses/brevard_house/brevard_backyard_20190109_row_{}.json".format(i)
+
 		print("Opening {}".format(input_filename))
 
 		row_obj = {

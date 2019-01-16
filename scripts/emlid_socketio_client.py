@@ -93,6 +93,10 @@ class EmlidSocketIOClient(EmlidSocketIOParameters):
 
 			socketIO.wait()
 
+		# Shuts down ROS node after socketio process is killed:
+		print("Shutting down socketio client ROS node.")
+		rospy.signal_shutdown("Socketio server disconnected, shutting down emlid_socketio_client ROS node.")
+
 
 
 	def on_connect(self):
@@ -112,8 +116,8 @@ class EmlidSocketIOClient(EmlidSocketIOParameters):
 		self.connected_publisher.publish(False)
 		self.msg_num = 0
 
-		print("Shutting down socketio client ROS node.")
-		rospy.signal_shutdown("Socketio server disconnected, shutting down emlid_socketio_client ROS node.")
+		# print("Shutting down socketio client ROS node.")
+		# rospy.signal_shutdown("Socketio server disconnected, shutting down emlid_socketio_client ROS node.")
 		
 		print('disconnected.')
 

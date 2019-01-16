@@ -257,7 +257,7 @@ class CourseFileHandler(object):
 
 
 
-	def convert_latlon_csv_to_course(self, input_filename, output_filename, n_skip=1):
+	def convert_latlon_csv_to_course(self, input_filename, output_filename, n_skip=1, has_timestamp=False):
 		"""
 		Converts a CSV of lat, lons to a JSON formatted course.
 		"""
@@ -278,8 +278,16 @@ class CourseFileHandler(object):
 
 		print("Building course file from lat, lons..")
 		for i in range(0, len(latlon_pairs) - 1, n_skip):
-			_lat = float(latlon_pairs[i].split(',')[0])
-			_lon = float(latlon_pairs[i].split(',')[1])
+			
+			lat_index, lon_index, time_index = 0, 1, None
+
+			if has_timestamp:
+				time_index, lat_index, lon_index = 0, 1, 2
+
+			data_list = latlon_pairs[i].split(',')
+
+			_lat = float(data_list[lat_index])
+			_lon = float(data_list[lon_index])
 			_pos_obj = {
 				'index': str(i),
 				'decPos': {
@@ -287,6 +295,11 @@ class CourseFileHandler(object):
 					'lon': _lon
 				}
 			}
+
+			# Adds 'time' key:val if time column is in input file:
+			if has_timestamp and time_index == 0:
+				_pos_obj['time'] = data_list[time_index]
+
 			json_obj['flags'].append(_pos_obj)
 
 		self.flags = json_obj  # sets flags object to fill out remaining data
@@ -298,11 +311,56 @@ class CourseFileHandler(object):
 		fileout.close()
 
 		print("Done.")
-		return	
+		return
+
+
+
+	def main(self, option, input_filename, output_filename, n_skip=1, has_timestamp=False):
+		"""
+		Executes the classes course file handling routine.
+		"""
+		print("Starting course_file_handler with option {}.".format(option))
+		
+		if option == 1:
+			# # WRITES A COURSE FILE FROM CSV OF LAT/LONS:
+			self.convert_latlon_csv_to_course(input_filename, output_filename, n_skip, has_timestamp)
+			# # Batch Mode:
+			# for i in range(4, 12):
+			# 	input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
+			# 	output_filename = "../courses/peanut_field_2018/row_{}_course.json".format(i)
+			# 	self.convert_latlon_csv_to_course(input_filename, output_filename)
+
+		elif option == 2:
+			# # WRITES CSV OF POSITIONS FROM COURSE FILE:
+			self.convert_course_to_latlon_csv(input_filename, output_filename, n_skip)
+
+		elif option == 3:
+			# # CONVERTS /FIX BAG FILE TO COURSE FILE:
+			print("Assuming GPS topic is /fix in bag file..")
+			output_filename = "{}_filled.json".format(input_filename.split('.bag')[0])  # saves as same input_filename but w/ .json extension..
+			bag_handler.main(input_filename, output_filename, ["/fix"])  # NOTE: will save output file to path as output_filename..
+			print("Filled out GPS data file created: {}".format(output_filename))
+			self.read_flags_file(output_filename)  # sets updated/filled data file as flags file..
+			self.parse_bag_data_to_flags(n_skip)  # parses bag_handler data to flags file format before filling out position data..
+			updated_flags = self.fill_out_flags_file()
+			self.flags['flags'] = updated_flags
+			print("Saving file as: {}..".format(output_filename))
+			self.save_flags_file(output_filename, self.flags)
+
+		elif option == 4:
+			# # FILLS OUT EXISTING COURSE FILE
+			print("Filling out existing course file..")
+			self.read_flags_file(input_filename)
+			updated_flags = self.fill_out_flags_file()
+			self.flags['flags'] = updated_flags
+			print(">>> Saving updated file as: {}..".format(input_filename))
+			self.save_flags_file(input_filename, self.flags)
+
+		print("Done.")
+
+
 
 			
-
-
 
 
 
@@ -315,89 +373,54 @@ if __name__ == '__main__':
 
 	Inputs:
 	  1. option (int):
-	    1 - Create a course file from a CSV of lat/lons.
-	    2 - Create a CSV of lat/lons from course file.
-	    3 - Convert bag file to course.
-	    4 - Fill out existing course file.
+		1 - Create a course file from a CSV of lat/lons.
+		2 - Create a CSV of lat/lons from course file.
+		3 - Convert bag file to course.
+		4 - Fill out existing course file.
 	  2. input_filename (string).
 	  3. output_filename (string, for options 1-3).
 	  4. n_skip (int, for options 1-3) - number of indices to skip when building file.
 	"""
 
-	
-
+	# Reads in 'option' and 'input_filename' args:
 	try:
 		option = int(sys.argv[1])
-
+		input_filename = sys.argv[2]
 		if option == "help":
 			print("{}".format(desc))
-
 	except Exception as e:
+		print("Exception: {}".format(e))
 		print("{}".format(desc))
+		raise
+
+	# Reads in 'output_filename' arg:
+	try:
+		output_filename = sys.argv[3]
+	except Exception as e:
+		if option == 4:
+			# option 4 only requires 'option' and 'input_filename'
+			print("Skipping 'output_filename' arg, not needed for option 4.")
+		else:
+			print("Must provide an output_filename as an arg.")
+			print("{}".format(desc))
+			raise
+
+	# Reads in 'n_skip' arg:
+	try:
+		n_skip = int(sys.argv[4])
+	except Exception as e:
+		if option == 4:
+			print("Skipping n_skip' arg, not needed for option 4.")
+		else:
+			print("Didn't provide an 'n_skip' count, defaulting to 1 (don't skip points).")
+			n_skip = 1
+
+	try:
+		has_timestamp = bool(sys.argv[5])
+	except Exception as e:
+		print("has_timestamp arg not specificed, defaulting to False.")
+		has_timestamp = False
 
 
 	cfh = CourseFileHandler()
-
-
-	if option == 1:
-		# # WRITES A COURSE FILE FROM CSV OF LAT/LONS:
-		input_filename = sys.argv[2]
-		output_filename = sys.argv[3]
-		n_skip = int(sys.argv[4])
-		
-		cfh.convert_latlon_csv_to_course(input_filename, output_filename, n_skip)
-		
-		# # Batch Mode:
-		# for i in range(4, 12):
-		# 	input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
-		# 	output_filename = "../courses/peanut_field_2018/row_{}_course.json".format(i)
-		# 	cfh.convert_latlon_csv_to_course(input_filename, output_filename)
-
-
-	elif option == 2:
-		# # WRITES CSV OF POSITIONS FROM COURSE FILE:
-		input_filename = sys.argv[2]
-		output_filename = sys.argv[3]
-		n_skip = int(sys.argv[4])
-
-		cfh.convert_course_to_latlon_csv(input_filename, output_filename, n_skip)
-	
-
-
-	elif option == 3:
-		# # CONVERTS /FIX BAG FILE TO COURSE FILE:
-		input_filename = sys.argv[2]  # get filename from command line
-		output_filename = sys.argv[3]
-		n_skip = int(sys.argv[4])  # number of indices to skip when building course file (e.g., 5)
-
-		print("Assuming GPS topic is /fix in bag file..")
-		output_filename = "{}_filled.json".format(input_filename.split('.bag')[0])  # saves as same input_filename but w/ .json extension..
-		bag_handler.main(input_filename, output_filename, ["/fix"])  # NOTE: will save output file to path as output_filename..
-
-		print("Filled out GPS data file created: {}".format(output_filename))
-
-		cfh.read_flags_file(output_filename)  # sets updated/filled data file as flags file..
-		cfh.parse_bag_data_to_flags(n_skip)  # parses bag_handler data to flags file format before filling out position data..
-		
-		updated_flags = cfh.fill_out_flags_file()
-		cfh.flags['flags'] = updated_flags
-
-		print("Saving file as: {}..".format(output_filename))
-		cfh.save_flags_file(output_filename, cfh.flags)
-
-
-
-	elif option == 4:
-		# # FILLS OUT EXISTING COURSE FILE
-		input_filename = sys.argv[2]
-
-		print("Filling out existing course file..")
-		cfh.read_flags_file(input_filename)
-		updated_flags = cfh.fill_out_flags_file()
-		cfh.flags['flags'] = updated_flags
-		print(">>> Saving updated file as: {}..".format(input_filename))
-		cfh.save_flags_file(input_filename, cfh.flags)
-
-
-
-	print("Done.")
+	cfh.main(option, input_filename, output_filename, n_skip, has_timestamp)

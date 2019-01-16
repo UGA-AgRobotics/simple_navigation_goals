@@ -21,6 +21,9 @@ from lib.nav_tracks import NavTracks
 from lib.nav_nudge import NavNudge
 from lib import orientation_transforms
 from lib import dubins_path as dp
+from lib import bag_handler
+from controls import controller_testing
+from controls.controller_testing import NavController
 
 
 
@@ -32,18 +35,19 @@ class SingleGoalNav(object):
 	"""
 
 	def __init__(self, path_json, nudge_factor=None):
+	# def __init__(self, nudge_factor=None):
 		
 		# Give the node a name
 		rospy.init_node('single_goal_nav')
 
 		# Subscribers:
 		rospy.Subscriber("/start_driving", Bool, self.start_driving_callback, queue_size=1)
-		rospy.Subscriber("/stop_driving", Bool, self.stop_driving_callback, queue_size=1)
+		# # rospy.Subscriber("/stop_driving", Bool, self.stop_driving_callback, queue_size=1)
 		rospy.Subscriber("/fix", NavSatFix, self.rover_position_callback, queue_size=1)
 		rospy.Subscriber('/imu/data', Imu, self.rover_imu_callback, queue_size=1)  # NOTE: TEMP TESTING WITH JACKAL'S IMU!!!!!
 		rospy.Subscriber("/at_flag", Bool, self.flag_callback, queue_size=1)  # sub to /at_flag topic from jackal_flags_node.py
 		rospy.Subscriber("/flag_index", Int64, self.flag_index_callback, queue_size=1)
-		rospy.Subscriber("/stop_gps", Bool, self.stop_gps_callback, queue_size=1)
+		# rospy.Subscriber("/stop_gps", Bool, self.stop_gps_callback, queue_size=1)
 
 		# Publisher for controller jackal:
 		self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)  # see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#Choosing_a_good_queue_size
@@ -75,7 +79,8 @@ class SingleGoalNav(object):
 
 		self.look_ahead = 1.5  # look-ahead for target index, in meters
 
-		self.angle_tolerance = 0.1  # angle tolerance in degrees
+		# self.angle_tolerance = 0.1  # angle tolerance in degrees
+		self.angle_tolerance = 0.01  # angle tolerance in degrees
 
 		self.angle_trim = 2.0  # max angle inc per iteration (in degrees)
 
@@ -92,17 +97,19 @@ class SingleGoalNav(object):
 
 		self.stop_gps = False
 
+		self.nav_controller = NavController()
+
 		print("Jackal driver ready.")
 
 
 
-	def stop_driving_callback(self, msg):
-		"""
-		Stops the jackal if it receives True from
-		Rover Watch "Stop path following" button.
-		"""
-		print("Received stop message from Rover Watch.")
-		self.shutdown()
+	# def stop_driving_callback(self, msg):
+	# 	"""
+	# 	Stops the jackal if it receives True from
+	# 	Rover Watch "Stop path following" button.
+	# 	"""
+	# 	print("Received stop message from Rover Watch.")
+	# 	self.shutdown()
 
 
 
@@ -112,7 +119,7 @@ class SingleGoalNav(object):
 		Sends a True if rover loses a fix.
 		"""
 		if msg.data == True:
-			print("Received True on /stop_gps, rover has lost a fix..")
+			print("Received True on /stop_gps, rover has lost a fix.")
 			self.stop_gps = True
 		else:
 			self.stop_gps = False
@@ -151,26 +158,34 @@ class SingleGoalNav(object):
 		to drive and follow the course.
 		"""
 
-		print("Start driving callback initiated..")
-
 		if msg.data == True:
 
 			if not self.path_json:
-				print("Waiting for drive node to be started..")
+				print("Waiting for drive node to be started.")
 				return
 
+			# Gets path data from rosbag if the path_json is a rosbag filename:
+			# if isinstance(self.path_json, str) and ".bag" in self.path_json:
+
+
+			# Checks if path is already a list, if not it assumes the path
+			# data is formatted as a JSON course file (e.g., courses/course_10_filled.json):
 			if not isinstance(self.path_json, list):
 				nt = NavTracks()
 				path_array = nt.get_track_from_course(self.path_json)  # builds list of [easting, northing] pairs from course file
 			else:
 				path_array = self.path_json  # assuming it's already a list of [easting, northing] pairs..
 
-			print("The Course: {}".format(path_array))
-			print("Starting path following routine..")
+			# print("The Course: {}".format(path_array))
+			print("Starting path following routine.")
 
 			self.target_index = 0
 
 			self.start_path_following(path_array, self.target_index)
+
+		elif msg.data == False:
+			print("Received stop message (false on /start_driving).")
+			self.shutdown()
 
 
 
@@ -192,6 +207,8 @@ class SingleGoalNav(object):
 		curr_pose_utm = utm.from_latlon(_lat, _lon)
 		self.current_pos = [curr_pose_utm[0], curr_pose_utm[1]]
 
+		# print("Current position: {}".format(self.current_pos))
+
 
 
 	def rover_imu_callback(self, msg):
@@ -205,7 +222,7 @@ class SingleGoalNav(object):
 	# def call_micoleaf_service(self, flag_ind):
 
 	# 	# Mico Leaf Service:
-	# 	print("Waiting for /mico_leaf1/sample_service..")
+	# 	print("Waiting for /mico_leaf1/sample_service.")
 	# 	rospy.wait_for_service('/mico_leaf1/sample_service')
 	# 	self.start_sample_collection = rospy.ServiceProxy('/mico_leaf1/sample_service', start_sample)
 	# 	print("start_sample_collection service ready.")
@@ -255,7 +272,7 @@ class SingleGoalNav(object):
 
 		if angle_diff < math.pi + angle_tolerance and angle_diff > math.pi - angle_tolerance:
 			# rover is facing opposite direction row was recorded, flips row array around:
-			print("Flipping row array, rover is facing opposite direction from how it was recorded..")
+			print("Flipping row array, rover is facing opposite direction from how it was recorded.")
 			current_row_flipped = [pos for pos in reversed(current_row)]  # flipped array of easting, northing pairs
 
 			print("Flipped Course: {}".format(current_row_flipped))
@@ -270,15 +287,15 @@ class SingleGoalNav(object):
 
 		if not isinstance(path_array, list):
 			self.shutdown()
-			raise Exception("Path must be a list of [easting, northing] pairs..")
+			raise Exception("Path must be a list of [easting, northing] pairs.")
 
 		if len(path_array) < 1:
 			self.shutdown()
-			raise Exception("Path must be at least one point..")
+			raise Exception("Path must be at least one point.")
 
 		i = 0
 		while not self.current_pos:
-			print("({}s) Waiting for GPS data from /fix topic..")
+			print("({}s) Waiting for GPS data from /fix topic.".format(i))
 			rospy.sleep(1)
 			i += 1
 
@@ -288,7 +305,7 @@ class SingleGoalNav(object):
 
 
 		# Testing course flip function for when Jackal is facing opposite direction relative to the courses recorded direction:
-		path_array = self.determine_drive_direction(path_array)
+		# path_array = self.determine_drive_direction(path_array)
 
 
 		# # Testing nudge module's nudge of row array (currently called multirow):
@@ -319,7 +336,7 @@ class SingleGoalNav(object):
 
 
 		# Sleep routine for testing:
-		print("Pausing 10 seconds before initiating driving (to have time to run out there)...")
+		print("Pausing 10 seconds before initiating driving (to have time to run out there)..")
 		rospy.sleep(10)
 
 		
@@ -343,10 +360,10 @@ class SingleGoalNav(object):
 				self.execute_flag_routine()
 
 			if self.stop_gps:
-				print("Lost GPS fix.. Stopping the rover until fix is obtained..")
+				print("Lost GPS fix.. Stopping the rover until fix is obtained.")
 				self.wait_for_fix()
 
-			rospy.sleep(0.2)
+			rospy.sleep(0.2)  # main algorithm timer!
 
 			_curr_utm = self.current_pos  # gets current utm
 			self.target_index = self.calc_target_index(_curr_utm, self.target_index, self.np_course[:,0], self.np_course[:,1])
@@ -370,21 +387,28 @@ class SingleGoalNav(object):
 
 			if abs(turn_angle) > abs(self.angle_tolerance):
 
+				# self.angle_trim = controller_testing.angle_to_trim_equation(abs(turn_angle))
+				self.angle_trim = self.nav_controller.angle_to_trim_angle(abs(turn_angle))
+				self.linear_speed = self.nav_controller.angle_to_linear_speed(abs(turn_angle))
+				
+				print("Proportional trim angle: {}".format(self.angle_trim))
+				print("Proportional linear speed: {}".format(self.linear_speed))
+
 				if turn_angle < -self.angle_trim:
 					turn_angle = -self.angle_trim
 
 				elif turn_angle > self.angle_trim:
 					turn_angle = self.angle_trim
 
-				print("Telling Rover to turn {} degreess..".format(turn_angle))
+				print("Telling Rover to turn {} degreess.".format(turn_angle))
 
 				self.translate_angle_with_imu(turn_angle)
 
 				print("Finished turn.")
 
 
-		print("Finished driving course..")
-		print("Shutting down Jackal..")
+		print("Finished driving course.")
+		print("Shutting down Jackal.")
 		self.shutdown()
 
 
@@ -425,7 +449,7 @@ class SingleGoalNav(object):
 		"""
 		i = 0
 		while self.stop_gps:
-			print("({}s) Waiting for GPS to obtain a fix..".format(i))
+			print("({}s) Waiting for GPS to obtain a fix.".format(i))
 			rospy.sleep(1.0)
 			i += 1
 
@@ -439,16 +463,16 @@ class SingleGoalNav(object):
 		"""
 		Routine to run when the rover is at a flag.
 		"""
-		print("Making sure rover is stopped, then making request to take a sample..")
+		print("Making sure rover is stopped, then making request to take a sample.")
 		rospy.sleep(0.1)
 		self.cmd_vel.publish(Twist())
 
 		# Call sample collector service here..
 		########################################################################
-		print("Pausing 10s to simulate a sample collection routine..")
+		print("Pausing 10s to simulate a sample collection routine.")
 		rospy.sleep(10)
 
-		# print("Pausing 5s, then calling mico leaf service..")
+		# print("Pausing 5s, then calling mico leaf service.")
 		# rospy.sleep(5)
 		# self.throttle_pub.publish(self.throttle_max)
 		# rospy.sleep(1)
@@ -532,7 +556,7 @@ class SingleGoalNav(object):
 		"""
 		Always stop the robot when shutting down the node
 		"""
-		print("Stopping the Jackal..")
+		print("Stopping the Jackal.")
 		self.cmd_vel.publish(Twist())
 
 
@@ -549,15 +573,16 @@ if __name__ == '__main__':
 		raise IndexError("Course not specified. Add course filename as arg when running basic_drive_5.py")
 
 	try:
-		nudge_factor = float(sys.argv[2])
+		# nudge_factor = float(sys.argv[2])
+		nudge_factor = float(sys.argv[1])
 	except Exception:
-		print("No nudge factor provided, assuming 0..")
+		print("No nudge factor provided, assuming 0.")
 		nudge_factor = None
 
 	coursefile = open(course_filename, 'r')
 	course = json.loads(coursefile.read())
 
-	print("Course to follow: {}".format(course_filename))
+	# print("Course to follow: {}".format(course_filename))
 
 	try:
 		SingleGoalNav(course, nudge_factor)

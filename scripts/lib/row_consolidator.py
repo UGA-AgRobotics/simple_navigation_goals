@@ -88,7 +88,8 @@ if __name__ == '__main__':
 
 		# input_filename = "../courses/peanut_field_2018/row_{}_latlons.csv".format(i)
 		# input_filename = "../courses/course_{}_filled.json".format(i + 12)
-		input_filename = "../courses/brevard_house/brevard_backyard_20190109_row_{}.json".format(i)
+		# input_filename = "../courses/brevard_house/brevard_backyard_20190109_row_{}.json".format(i)
+		input_filename = "../courses/brevard_house/brevard_backyard_20190117_row_{}_filled.json".format(i)
 
 		print("Opening {}".format(input_filename))
 

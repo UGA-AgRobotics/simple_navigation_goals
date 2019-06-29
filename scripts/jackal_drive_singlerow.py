@@ -216,6 +216,7 @@ class SingleGoalNav(object):
 		Angle from IMU in radians.
 		"""
 		self.current_angle = self.quat_to_angle(msg.orientation)
+		# print("angle: {}".format(math.degrees(self.current_angle)))
 
 
 

@@ -6,34 +6,6 @@ import matplotlib.pyplot as plt
 
 
 
-########################################################################
-# Test 1 - Proportioning angle trim based on rover's actual turn angle.
-
-# Quantities to consider: angle trim, actual turn angle, angle tolerance
-########################################################################
-
-# Plots range of values for angle trim P controller:
-
-max_angle = 360.0  # max possible turn angle
-min_angle = 0.01  # min possible turn angle, any lower is considered "straight"
-
-min_angle_trim = 0.1  # min angle trim when turn angle is smallest
-max_angle_trim = 20.0  # max angle trim when turn angle is largest
-
-Kp = 5.0  # proportional constant for trim angle
-SP = 0.1  # trim angle set point (ideal trim angle)
-
-Kp_array, SP_array = [], []
-x, y = [], []
-
-angle_to_trim_slope = (max_angle_trim - min_angle_trim) / (max_angle - min_angle)  # slope
-angle_to_trim_intercept = min_angle_trim - angle_to_trim_slope * min_angle  # y-intercept
-
-def angle_to_trim_equation(turn_angle):
-	return angle_to_trim_slope * turn_angle + angle_to_trim_intercept
-
-
-
 class NavController(object):
 	"""
 	Handles proportional controls for various navigation
@@ -95,9 +67,11 @@ class NavController(object):
 
 		if turn_angle >= self.min_angle and turn_angle < 3.0:
 			new_linear_speed = self.max_linear_speed
-		elif turn_angle >= 3.0 and turn_angle < 30.0:
+		elif turn_angle >= 3.0 and turn_angle < 20.0:
 			new_linear_speed = 0.3
-		elif turn_angle >= 30.0:
+		elif turn_angle >= 20.0 and turn_angle < 40.0:
+			new_linear_speed = 0.2
+		elif turn_angle >= 40.0:
 			new_linear_speed = self.min_linear_speed
 		else:
 			new_linear_speed = None

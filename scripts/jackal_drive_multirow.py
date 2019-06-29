@@ -58,8 +58,8 @@ class SingleGoalNav(object):
 		
 		self.move_cmd = Twist()  # Data type to move jackal
 
-		self.dubins_min_turn = 2.5  # default (red rover's min turn radius) min turn for dubins curves
-		self.dubins_step_size = 0.5  # default step-size for dubins curves
+		self.dubins_min_turn = 5.0  # default (red rover's min turn radius) min turn for dubins curves
+		self.dubins_step_size = 0.2  # default step-size for dubins curves
 		
 		self.linear_speed = 0.3  # jackal's linear speed
 		self.linear_speed_row = 0.3
@@ -120,7 +120,7 @@ class SingleGoalNav(object):
 		"""
 		if msg.data == True:
 			print("Received True on /stop_gps, rover has lost a fix..")
-			self.stop_gps = True
+			# self.stop_gps = True
 		else:
 			self.stop_gps = False
 
@@ -189,7 +189,7 @@ class SingleGoalNav(object):
 		Angle from IMU in radians.
 		"""
 		self.current_angle = self.quat_to_angle(msg.orientation)
-		print("Current angle: {}".format(math.degrees(self.current_angle)))
+		# print("Current angle: {}".format(math.degrees(self.current_angle)))
 
 
 
@@ -276,11 +276,11 @@ class SingleGoalNav(object):
 			self.execute_path_follow(row_array, init_target)  # follow down row
 
 			# Change these if different than defaults (defaults: 2.5m, 0.5m):
-			self.dubins_min_turn = 1.5
-			self.dubins_step_size = 0.2
+			# self.dubins_min_turn = 1.5
+			# self.dubins_step_size = 0.2
 
 			# next_row_index = path_array[i+1]['index']  # next row rover is traveling to
-			next_row_index = path_array[i + self.row_skip]  # NOTE: This'll skip rows, but will probs trigger IndexError near end of array (add checking)
+			next_row_index = path_array[i + self.row_skip]['index']  # NOTE: This'll skip rows, but will probs trigger IndexError near end of array (add checking)
 
 			# Calculates dubins curve from exit -> entry row (which is next row in course for this example):
 			dubins_path = dp.handle_dubins(self.path_json, row_index, next_row_index, self.dubins_min_turn, self.dubins_step_size)  # run dubins from current end or row to next row
@@ -304,16 +304,10 @@ class SingleGoalNav(object):
 		row_array = path_array[len(path_array) - 1]['row']  # row array
 		row_index = path_array[len(path_array) - 1]['index']  # row index
 
-		
-
 		# Flips row array if rover is facing opposite direction it was recorded:
 		row_array = self.determine_drive_direction(row_array)  # added this to see if it'll fix post-nudge issue
 
-
-
 		print("Following last row! Row {}".format(row_index))
-
-		print("Row array: {}".format(row_array))
 
 		self.np_course = np.array(row_array)
 

@@ -211,7 +211,7 @@ class EmlidSocketIOClient(EmlidSocketIOParameters):
 			self.gps_stop_publisher.publish(True)
 			return False
 
-		if status == 'fix':
+		if status == 'fix' or status == 'float':
 			self.gps_stop_publisher.publish(False)  # starts rover after getting fix
 			return True
 

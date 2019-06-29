@@ -59,7 +59,7 @@ class SingleGoalNav(object):
 		self.move_cmd = Twist()  # Data type to move jackal
 
 		self.dubins_min_turn = 5.0  # default (red rover's min turn radius) min turn for dubins curves
-		self.dubins_step_size = 0.2  # default step-size for dubins curves
+		self.dubins_step_size = 0.1  # default step-size for dubins curves
 		
 		self.linear_speed = 0.3  # jackal's linear speed
 		self.linear_speed_row = 0.3
@@ -119,8 +119,8 @@ class SingleGoalNav(object):
 		Sends a True if rover loses a fix.
 		"""
 		if msg.data == True:
-			print("Received True on /stop_gps, rover has lost a fix..")
-			# self.stop_gps = True
+			print("Received True on /stop_gps, rover has lost a fix or float..")
+			self.stop_gps = True
 		else:
 			self.stop_gps = False
 

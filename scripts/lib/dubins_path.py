@@ -158,7 +158,7 @@ def handle_dubins(course_data, exit_row_index, entry_row_index, turning_radius, 
 	path = dubins.shortest_path(q0, q1, turning_radius)
 	configurations, _ = path.sample_many(step_size)
 
-	plot_handler(configurations, exit_row, entry_row, q0, q1)
+	# plot_handler(configurations, exit_row, entry_row, q0, q1)  # plots dubins curve with pyplot 
 
 	dubins_course = np.array(configurations)
 
